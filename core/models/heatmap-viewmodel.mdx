@@ -1,0 +1,164 @@
+---
+title: HeatmapViewModel
+description: View models for rendering GitHub-style activity heatmaps
+---
+
+## HeatmapViewModel
+
+Complete heatmap data structure optimized for rendering calendar visualizations. Contains all data needed to display a GitHub-style contribution heatmap.
+
+<ResponseField name="weeks" type="[HeatmapWeek]" required>
+  Array of weeks, where each week contains 7 day cells
+</ResponseField>
+
+<ResponseField name="maxMiles" type="Double" required>
+  Maximum daily mileage across all days in the heatmap (used for color scaling)
+</ResponseField>
+
+<ResponseField name="totalMiles" type="Double" required>
+  Total mileage across all days in the heatmap
+</ResponseField>
+
+<ResponseField name="today" type="Date" required>
+  The current date, used to highlight today's cell
+</ResponseField>
+
+### Example
+
+```swift
+let viewModel = HeatmapViewModel(
+    weeks: weeks,
+    maxMiles: 15.5,
+    totalMiles: 425.3,
+    today: Date()
+)
+
+// Use in SwiftUI
+ForEach(viewModel.weeks, id: \.start) { week in
+    ForEach(week.values, id: \.date) { cell in
+        HeatmapCell(
+            miles: cell.miles,
+            intensity: cell.miles / viewModel.maxMiles
+        )
+    }
+}
+```
+
+## HeatmapWeek
+
+Represents a single week in the heatmap grid, containing 7 day cells.
+
+<ResponseField name="start" type="Date" required>
+  Start date of the week (typically Sunday)
+</ResponseField>
+
+<ResponseField name="values" type="[HeatmapCell]" required>
+  Array of 7 cells representing each day of the week
+</ResponseField>
+
+### Example
+
+```swift
+let week = HeatmapWeek(
+    start: startOfWeek,
+    values: [
+        HeatmapCell(date: sunday, miles: 0, activityCount: 0),
+        HeatmapCell(date: monday, miles: 5.2, activityCount: 1),
+        HeatmapCell(date: tuesday, miles: 3.1, activityCount: 1),
+        HeatmapCell(date: wednesday, miles: 0, activityCount: 0),
+        HeatmapCell(date: thursday, miles: 6.8, activityCount: 2),
+        HeatmapCell(date: friday, miles: 4.0, activityCount: 1),
+        HeatmapCell(date: saturday, miles: 10.2, activityCount: 1)
+    ]
+)
+```
+
+## HeatmapCell
+
+Represents a single day cell in the heatmap visualization.
+
+<ResponseField name="date" type="Date" required>
+  The date this cell represents
+</ResponseField>
+
+<ResponseField name="miles" type="Double" required>
+  Total miles covered on this day
+</ResponseField>
+
+<ResponseField name="activityCount" type="Int" required>
+  Number of activities completed on this day
+</ResponseField>
+
+### Example
+
+```swift
+let cell = HeatmapCell(
+    date: Date(),
+    miles: 6.2,
+    activityCount: 1
+)
+
+// Calculate intensity for color
+let intensity = cell.miles / maxMiles
+let color = Color.orange.opacity(intensity)
+```
+
+## MonthLabel
+
+Label data for displaying month names above heatmap columns.
+
+<ResponseField name="label" type="String" required>
+  Month abbreviation (e.g., "Jan", "Feb", "Mar")
+</ResponseField>
+
+<ResponseField name="weekIndex" type="Int" required>
+  Index of the week column where this label should appear
+</ResponseField>
+
+### Example
+
+```swift
+let labels = [
+    MonthLabel(label: "Jan", weekIndex: 0),
+    MonthLabel(label: "Feb", weekIndex: 4),
+    MonthLabel(label: "Mar", weekIndex: 8)
+]
+
+// Use in UI
+ForEach(labels, id: \.weekIndex) { label in
+    Text(label.label)
+        .position(x: xForWeek(label.weekIndex), y: 0)
+}
+```
+
+## Building Heatmap Views
+
+Use `HeatmapBuilder.buildHeatmapView()` to construct a complete view model from heatmap days:
+
+```swift
+import StratilesCore
+
+let heatmapDays = [
+    HeatmapDay(date: "2024-01-01", miles: 5.0, activityCount: 1, distanceMeters: 8046.72),
+    HeatmapDay(date: "2024-01-02", miles: 3.2, activityCount: 1, distanceMeters: 5149.89),
+    // ... more days
+]
+
+let viewModel = HeatmapBuilder.buildHeatmapView(
+    heatmap: heatmapDays,
+    weeksToShow: 52
+)
+
+print("Total miles: \(viewModel.totalMiles)")
+print("Max daily miles: \(viewModel.maxMiles)")
+print("Weeks: \(viewModel.weeks.count)")
+```
+
+## Conformances
+
+All heatmap view models conform to:
+
+- `Sendable` - Safe to share across concurrency domains
+- `Hashable` - Can be used in Sets and Dictionary keys (HeatmapWeek, HeatmapCell, MonthLabel)
+
+HeatmapViewModel is `Sendable` only (not Hashable).

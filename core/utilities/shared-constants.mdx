@@ -1,0 +1,231 @@
+---
+title: Shared Constants
+description: Shared configuration values and utilities for app group coordination
+---
+
+## SharedConstants
+
+Centralized configuration values used across the app, widgets, and extensions. Defines app group identifiers, keychain settings, and shared storage keys.
+
+### Properties
+
+<ResponseField name="appGroupIdentifier" type="String" required>
+  App group identifier for sharing data between app and extensions
+  
+  **Value:** `"group.com.mattbolanos.stratiles"`
+</ResponseField>
+
+<ResponseField name="keychainAccessGroup" type="String" required>
+  Keychain access group for sharing tokens between app and extensions
+  
+  **Value:** `"$(AppIdentifierPrefix)com.mattbolanos.stratiles"`
+</ResponseField>
+
+<ResponseField name="selectedActivityTypesDefaultsKey" type="String" required>
+  UserDefaults key for storing selected activity types
+  
+  **Value:** `"selectedActivityTypes"`
+</ResponseField>
+
+<ResponseField name="cacheFileName" type="String" required>
+  Filename for the activity cache JSON file
+  
+  **Value:** `"activity-cache.json"`
+</ResponseField>
+
+### sharedDefaults
+
+Returns the shared UserDefaults instance for the app group.
+
+```swift
+public static var sharedDefaults: UserDefaults?
+```
+
+**Returns:** UserDefaults instance for the app group, or `nil` if app group is not available
+
+**Example:**
+
+```swift
+if let defaults = SharedConstants.sharedDefaults {
+    defaults.set(true, forKey: "hasCompletedOnboarding")
+}
+```
+
+## SharedActivityTypeSettings
+
+Utility functions for loading and saving activity type preferences to shared storage. This allows the app and widgets to stay in sync with the user's activity filter selection.
+
+### loadSelectedTypes
+
+Loads the user's selected activity types from shared storage.
+
+```swift
+public static func loadSelectedTypes() -> Set<ActivityType>
+```
+
+**Returns:** Set of selected activity types. Returns `ActivityType.defaultSelected` if no preferences are stored or the stored value is empty.
+
+**Default Selection:**
+
+```swift
+ActivityType.defaultSelected = [.run, .ride, .walk, .trailRun, .hike, .wheelchair]
+```
+
+**Example:**
+
+```swift
+let selectedTypes = SharedActivityTypeSettings.loadSelectedTypes()
+print("User selected: \(selectedTypes)")
+
+// Fetch activities for selected types
+let activities = try await StravaAPIClient.shared.fetchActivities(
+    selectedTypes: selectedTypes,
+    maxPages: 8,
+    perPage: 100,
+    after: oneYearAgo
+)
+```
+
+### saveSelectedTypes
+
+Saves the user's selected activity types to shared storage.
+
+```swift
+public static func saveSelectedTypes(_ types: Set<ActivityType>)
+```
+
+<ParamField path="types" type="Set<ActivityType>" required>
+  The activity types to save
+</ParamField>
+
+**Implementation Details:**
+
+- Converts activity types to sorted array of raw string values
+- Stores in shared UserDefaults with key `SharedConstants.selectedActivityTypesDefaultsKey`
+- Automatically accessible by app and widgets
+
+**Example:**
+
+```swift
+// User toggles activity type in settings
+let newSelection: Set<ActivityType> = [.run, .ride, .swim]
+SharedActivityTypeSettings.saveSelectedTypes(newSelection)
+
+// Widget automatically picks up the change
+WidgetCenter.shared.reloadAllTimelines()
+```
+
+## Usage Patterns
+
+### App Group Configuration
+
+Ensure your app has the proper entitlements:
+
+```xml
+<!-- Entitlements.plist -->
+<key>com.apple.security.application-groups</key>
+<array>
+    <string>group.com.mattbolanos.stratiles</string>
+</array>
+```
+
+### Cross-Target Data Sharing
+
+**In the main app:**
+
+```swift
+// Save activity type preference
+SharedActivityTypeSettings.saveSelectedTypes([.run, .ride])
+
+// Save other shared data
+SharedConstants.sharedDefaults?.set(Date(), forKey: "lastSync")
+```
+
+**In the widget:**
+
+```swift
+// Load the same preference
+let types = SharedActivityTypeSettings.loadSelectedTypes()
+
+// Access cache
+let cache = ActivityCache.shared
+let cached = await cache.read(selectedTypes: types)
+```
+
+### Synchronizing Widget Updates
+
+When activity type selection changes:
+
+```swift
+import WidgetKit
+
+func handleActivityTypeChange(_ newTypes: Set<ActivityType>) {
+    // 1. Save to shared storage
+    SharedActivityTypeSettings.saveSelectedTypes(newTypes)
+    
+    // 2. Reload widget timelines
+    WidgetCenter.shared.reloadAllTimelines()
+    
+    // 3. Notify other parts of the app
+    NotificationCenter.default.post(
+        name: .activityTypesChanged,
+        object: newTypes
+    )
+}
+```
+
+### Cache File Location
+
+The activity cache is stored in the app group container:
+
+```swift
+let fileManager = FileManager.default
+let container = fileManager.containerURL(
+    forSecurityApplicationGroupIdentifier: SharedConstants.appGroupIdentifier
+)
+let cacheURL = container?.appendingPathComponent(SharedConstants.cacheFileName)
+
+// Read cache
+if let url = cacheURL, let data = try? Data(contentsOf: url) {
+    let cache = try JSONDecoder().decode(Store.self, from: data)
+}
+```
+
+## Complete Example
+
+```swift
+import StratilesCore
+import WidgetKit
+
+// Settings screen
+@State private var selectedTypes = SharedActivityTypeSettings.loadSelectedTypes()
+
+var body: some View {
+    Form {
+        ForEach(ActivityType.allCases, id: \.self) { type in
+            Toggle(type.displayName, isOn: binding(for: type))
+        }
+    }
+    .onChange(of: selectedTypes) { _, newValue in
+        // Ensure at least one type is selected
+        let nonEmpty = newValue.isEmpty ? ActivityType.defaultSelected : newValue
+        
+        // Save to shared storage
+        SharedActivityTypeSettings.saveSelectedTypes(nonEmpty)
+        
+        // Update widgets
+        WidgetCenter.shared.reloadAllTimelines()
+        
+        // Refresh stats view
+        Task {
+            await refreshStats(with: nonEmpty)
+        }
+    }
+}
+```
+
+## Related
+
+- [ActivityType](/core/models/activity-type) - Enumeration of supported activity types
+- [ActivityCache](/core/api/activity-cache) - Uses SharedConstants for cache file location
+- [TokenManager](/core/api/token-manager) - Uses keychain access group for token sharing

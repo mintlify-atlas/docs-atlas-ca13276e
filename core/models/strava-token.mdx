@@ -1,0 +1,184 @@
+---
+title: StravaToken
+description: OAuth token data structure for Strava API authentication
+---
+
+## StravaToken
+
+Represents a Strava OAuth 2.0 token with access credentials and expiration metadata. Used by `TokenManager` for secure storage and by `StravaAPIClient` for API authentication.
+
+<ResponseField name="accessToken" type="String" required>
+  Short-lived access token for authenticating API requests
+</ResponseField>
+
+<ResponseField name="refreshToken" type="String" required>
+  Long-lived refresh token for obtaining new access tokens
+</ResponseField>
+
+<ResponseField name="expiresAt" type="TimeInterval" required>
+  Timestamp (Unix epoch) when the access token expires
+</ResponseField>
+
+## Properties
+
+### isExpired
+
+Computed property that checks if the access token needs to be refreshed.
+
+```swift
+public var isExpired: Bool
+```
+
+Returns `true` if the token will expire within the next 2 minutes, providing a buffer for refresh operations.
+
+**Implementation:**
+
+```swift
+public var isExpired: Bool {
+    expiresAt <= Date().addingTimeInterval(120).timeIntervalSince1970
+}
+```
+
+## Initialization
+
+```swift
+public init(
+    accessToken: String,
+    refreshToken: String,
+    expiresAt: TimeInterval
+)
+```
+
+<ParamField path="accessToken" type="String" required>
+  The access token from Strava OAuth response
+</ParamField>
+
+<ParamField path="refreshToken" type="String" required>
+  The refresh token from Strava OAuth response
+</ParamField>
+
+<ParamField path="expiresAt" type="TimeInterval" required>
+  Unix timestamp when the access token expires
+</ParamField>
+
+## Example Usage
+
+### Creating a Token
+
+```swift
+// From OAuth response
+let token = StravaToken(
+    accessToken: "abc123def456",
+    refreshToken: "xyz789uvw012",
+    expiresAt: Date().addingTimeInterval(21600).timeIntervalSince1970 // 6 hours
+)
+```
+
+### Checking Expiration
+
+```swift
+let token = await TokenManager.shared.loadToken()
+
+if let token = token {
+    if token.isExpired {
+        print("Token needs refresh")
+        // Trigger refresh flow
+        let newToken = try await StravaAPIClient.shared.getAccessToken(forceRefresh: true)
+    } else {
+        print("Token is still valid")
+        // Use existing token
+    }
+}
+```
+
+### Storing and Loading
+
+```swift
+// Save token to keychain
+let token = StravaToken(
+    accessToken: "access123",
+    refreshToken: "refresh456",
+    expiresAt: Date().addingTimeInterval(21600).timeIntervalSince1970
+)
+
+try await TokenManager.shared.saveToken(token)
+
+// Load token from keychain
+if let stored = await TokenManager.shared.loadToken() {
+    print("Access token: \(stored.accessToken)")
+    print("Expires: \(Date(timeIntervalSince1970: stored.expiresAt))")
+}
+```
+
+## Token Lifecycle
+
+### 1. Initial Authorization
+
+When the user authorizes the app:
+
+```swift
+let code = "authorization_code_from_strava"
+let token = try await StravaAPIClient.shared.exchangeAuthorizationCode(code)
+
+// Token is automatically saved to keychain
+print("Access token obtained: \(token.accessToken)")
+```
+
+### 2. Using the Token
+
+```swift
+// StravaAPIClient automatically manages token refresh
+let activities = try await StravaAPIClient.shared.fetchActivities(
+    selectedTypes: [.run],
+    maxPages: 5,
+    perPage: 100,
+    after: startDate
+)
+```
+
+### 3. Automatic Refresh
+
+The client automatically refreshes expired tokens:
+
+```swift
+// If token.isExpired == true, this will:
+// 1. Use the refresh token to get a new access token
+// 2. Save the new token to the keychain
+// 3. Use the new token for the request
+let accessToken = try await StravaAPIClient.shared.getAccessToken()
+```
+
+### 4. Manual Refresh
+
+Force a token refresh:
+
+```swift
+// Useful when you receive a 401 Unauthorized
+let freshToken = try await StravaAPIClient.shared.getAccessToken(forceRefresh: true)
+```
+
+### 5. Logout
+
+Clear the token on sign out:
+
+```swift
+await TokenManager.shared.clearToken()
+```
+
+## Security Considerations
+
+- **Keychain storage:** Tokens are stored in iOS Keychain with `kSecAttrAccessibleAfterFirstUnlock`
+- **Not synced:** Tokens are not synced via iCloud (`kSecAttrSynchronizable: false`)
+- **App group sharing:** Tokens can be shared between app and extensions via keychain access groups
+- **Automatic refresh:** The 2-minute buffer prevents expired token usage
+- **No logging:** Token values should never be logged or exposed
+
+## Conformances
+
+- `Codable` - Can be encoded/decoded to JSON for keychain storage
+- `Sendable` - Safe to share across concurrency domains
+
+## Related
+
+- [TokenManager](/core/api/token-manager) - Manages token storage and retrieval
+- [StravaAPIClient](/core/api/strava-api-client) - Uses tokens for API authentication
