@@ -1,0 +1,88 @@
+---
+title: MonthLabelBuilder
+description: Utility for generating month labels for heatmap week columns
+---
+
+`MonthLabelBuilder` is an enum containing static methods for building month labels for heatmap displays. It intelligently places month labels at the start of each month while maintaining minimum spacing to prevent overcrowding.
+
+## Methods
+
+### build
+
+```swift
+public static func build(from weeks: [HeatmapWeek]) -> [MonthLabel]
+```
+
+Builds an array of month labels from a sequence of heatmap weeks. Places labels at month boundaries while enforcing a minimum gap of 3 weeks between labels to ensure readability.
+
+<ParamField path="weeks" type="[HeatmapWeek]">
+  Array of heatmap weeks to generate labels for. Each week contains a start date used to determine the month.
+</ParamField>
+
+**Returns:** An array of `MonthLabel` objects, each containing:
+- `label`: Three-letter month abbreviation ("Jan", "Feb", etc.)
+- `weekIndex`: The index of the week where this label should be displayed
+
+**Labeling Rules:**
+- A label is placed when the month changes from the previous week
+- Labels must be at least 3 weeks apart (except for the first label at index 0)
+- Month abbreviations are in English ("en_US" locale)
+- Format: "MMM" (e.g., "Jan", "Feb", "Mar")
+
+**Example:**
+```swift
+import Foundation
+
+let weeks: [HeatmapWeek] = [
+    HeatmapWeek(start: date("2024-01-01"), values: [...]),
+    HeatmapWeek(start: date("2024-01-08"), values: [...]),
+    HeatmapWeek(start: date("2024-01-15"), values: [...]),
+    HeatmapWeek(start: date("2024-02-05"), values: [...]),
+    HeatmapWeek(start: date("2024-02-12"), values: [...]),
+    // ... more weeks
+]
+
+let labels = MonthLabelBuilder.build(from: weeks)
+// Returns:
+// [
+//     MonthLabel(label: "Jan", weekIndex: 0),
+//     MonthLabel(label: "Feb", weekIndex: 3),
+//     // ... more labels
+// ]
+
+// Using in a SwiftUI view
+struct HeatmapHeader: View {
+    let weeks: [HeatmapWeek]
+    
+    var body: some View {
+        let labels = MonthLabelBuilder.build(from: weeks)
+        
+        HStack(spacing: 2) {
+            ForEach(weeks.indices, id: \.self) { index in
+                let label = labels.first { $0.weekIndex == index }
+                Text(label?.label ?? "")
+                    .font(.caption2)
+                    .frame(width: 12)
+            }
+        }
+    }
+}
+```
+
+**Minimum Week Gap:**
+
+The builder enforces a minimum gap of 3 weeks between labels. If a month change occurs less than 3 weeks after the previous label, that month label is skipped.
+
+```swift
+// Example: Short month spanning only 2 weeks
+let weeks = [
+    HeatmapWeek(start: date("2024-01-01"), ...), // Label: "Jan" at index 0
+    HeatmapWeek(start: date("2024-01-08"), ...),
+    HeatmapWeek(start: date("2024-02-01"), ...), // Feb starts, but only 1 week gap - skipped
+    HeatmapWeek(start: date("2024-03-01"), ...), // Label: "Mar" at index 3 (3 weeks from Jan)
+]
+
+let labels = MonthLabelBuilder.build(from: weeks)
+// Returns: [MonthLabel("Jan", 0), MonthLabel("Mar", 3)]
+// Note: "Feb" is skipped due to insufficient gap
+```

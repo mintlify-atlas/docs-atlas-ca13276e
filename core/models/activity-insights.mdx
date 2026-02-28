@@ -1,0 +1,391 @@
+---
+title: ActivityInsights
+description: Models for activity analytics and insights
+---
+
+## ActivityInsights
+
+Comprehensive analytics data for a time window of activities, including aggregated statistics, trends, and visualizations.
+
+<ResponseField name="windowStart" type="Date" required>
+  Start of the analysis time window
+</ResponseField>
+
+<ResponseField name="windowEnd" type="Date" required>
+  End of the analysis time window
+</ResponseField>
+
+<ResponseField name="isPartial" type="Bool" required>
+  Whether the data is incomplete for the window
+</ResponseField>
+
+<ResponseField name="heatmapDays" type="[HeatmapDay]" required>
+  Daily activity data for heatmap visualization
+</ResponseField>
+
+<ResponseField name="heatmapView" type="HeatmapViewModel" required>
+  View model for rendering heatmap UI
+</ResponseField>
+
+<ResponseField name="totalActivities" type="Int" required>
+  Total number of activities in the window
+</ResponseField>
+
+<ResponseField name="totalMiles" type="Double" required>
+  Total distance covered in miles
+</ResponseField>
+
+<ResponseField name="totalMovingHours" type="Double" required>
+  Total hours spent moving across all activities
+</ResponseField>
+
+<ResponseField name="totalElevationGainMeters" type="Double" required>
+  Total elevation gain in meters
+</ResponseField>
+
+<ResponseField name="totalKudos" type="Int" required>
+  Total kudos received across all activities
+</ResponseField>
+
+<ResponseField name="currentStreakDays" type="Int" required>
+  Current active streak in days
+</ResponseField>
+
+<ResponseField name="longestStreakDays" type="Int" required>
+  Longest streak achieved in days
+</ResponseField>
+
+<ResponseField name="weeklyVolumes" type="[WeeklyVolume]" required>
+  Weekly training volume breakdown
+</ResponseField>
+
+<ResponseField name="trainingRhythm" type="[TrainingRhythmCell]" required>
+  Heatmap of training patterns by weekday and hour
+</ResponseField>
+
+<ResponseField name="maxRhythmCount" type="Int" required>
+  Maximum activity count in any training rhythm cell
+</ResponseField>
+
+<ResponseField name="typeBreakdown" type="[ActivityTypeBreakdown]" required>
+  Distribution of activities by type
+</ResponseField>
+
+<ResponseField name="peakDays" type="[PeakDay]" required>
+  Days with highest metrics
+</ResponseField>
+
+<ResponseField name="peakActivities" type="[PeakActivity]" required>
+  Individual activities with standout performance
+</ResponseField>
+
+<ResponseField name="pacePoints" type="[PacePoint]">
+  Pace data points for trend analysis (default: [])
+</ResponseField>
+
+<ResponseField name="effortPoints" type="[EffortPoint]">
+  Effort/suffer score data points (default: [])
+</ResponseField>
+
+<ResponseField name="weeklyEffort" type="[WeeklyEffort]">
+  Weekly effort metrics (default: [])
+</ResponseField>
+
+### Example
+
+```swift
+let insights = ActivityInsights(
+    windowStart: startDate,
+    windowEnd: endDate,
+    isPartial: false,
+    heatmapDays: heatmapData,
+    heatmapView: viewModel,
+    totalActivities: 145,
+    totalMiles: 523.4,
+    totalMovingHours: 68.5,
+    totalElevationGainMeters: 12450.0,
+    totalKudos: 892,
+    currentStreakDays: 12,
+    longestStreakDays: 34,
+    weeklyVolumes: volumes,
+    trainingRhythm: rhythmData,
+    maxRhythmCount: 15,
+    typeBreakdown: breakdown,
+    peakDays: peaks,
+    peakActivities: topActivities,
+    pacePoints: paceData,
+    effortPoints: effortData,
+    weeklyEffort: weeklyEffortData
+)
+```
+
+## Related Models
+
+<Expandable title="ActivityTypeBreakdown">
+
+Distribution statistics for a specific activity type.
+
+<ResponseField name="type" type="ActivityType" required>
+  The activity type
+</ResponseField>
+
+<ResponseField name="activityCount" type="Int" required>
+  Number of activities of this type
+</ResponseField>
+
+<ResponseField name="share" type="Double" required>
+  Percentage share of total activities (0.0 to 1.0)
+</ResponseField>
+
+```swift
+let breakdown = ActivityTypeBreakdown(
+    type: .run,
+    activityCount: 45,
+    share: 0.31
+)
+```
+
+</Expandable>
+
+<Expandable title="TrainingRhythmCell">
+
+Activity data for a specific weekday and hour combination.
+
+<ResponseField name="weekday" type="Int" required>
+  Day of week (1 = Sunday, 7 = Saturday)
+</ResponseField>
+
+<ResponseField name="hour" type="Int" required>
+  Hour of day (0-23)
+</ResponseField>
+
+<ResponseField name="activityCount" type="Int" required>
+  Number of activities started in this time slot
+</ResponseField>
+
+<ResponseField name="movingSeconds" type="Int" required>
+  Total moving time in seconds
+</ResponseField>
+
+```swift
+let cell = TrainingRhythmCell(
+    weekday: 3, // Tuesday
+    hour: 17,   // 5 PM
+    activityCount: 8,
+    movingSeconds: 14400
+)
+```
+
+</Expandable>
+
+<Expandable title="WeeklyVolume">
+
+Training volume metrics for a single week.
+
+<ResponseField name="weekStart" type="Date" required>
+  Start date of the week (typically Monday)
+</ResponseField>
+
+<ResponseField name="miles" type="Double" required>
+  Total miles covered during the week
+</ResponseField>
+
+<ResponseField name="activeDays" type="Int" required>
+  Number of days with at least one activity
+</ResponseField>
+
+<ResponseField name="activityCount" type="Int" required>
+  Total activities during the week
+</ResponseField>
+
+```swift
+let volume = WeeklyVolume(
+    weekStart: weekDate,
+    miles: 45.2,
+    activeDays: 5,
+    activityCount: 7
+)
+```
+
+</Expandable>
+
+<Expandable title="PeakDay">
+
+A day with exceptional metrics (implements Identifiable).
+
+<ResponseField name="date" type="Date" required>
+  The date of the peak day
+</ResponseField>
+
+<ResponseField name="dateKey" type="String" required>
+  String identifier for the date (also serves as id)
+</ResponseField>
+
+<ResponseField name="miles" type="Double" required>
+  Total miles covered
+</ResponseField>
+
+<ResponseField name="activityCount" type="Int" required>
+  Number of activities completed
+</ResponseField>
+
+<ResponseField name="elevationGainMeters" type="Double" required>
+  Total elevation gain in meters
+</ResponseField>
+
+<ResponseField name="kudosCount" type="Int" required>
+  Total kudos received
+</ResponseField>
+
+```swift
+let peakDay = PeakDay(
+    date: Date(),
+    dateKey: "2024-01-15",
+    miles: 26.2,
+    activityCount: 1,
+    elevationGainMeters: 450.0,
+    kudosCount: 42
+)
+print(peakDay.id) // "2024-01-15"
+```
+
+</Expandable>
+
+<Expandable title="PeakActivity">
+
+A single activity with standout performance (implements Identifiable).
+
+<ResponseField name="id" type="Int" required>
+  Strava activity ID
+</ResponseField>
+
+<ResponseField name="name" type="String" required>
+  Activity name
+</ResponseField>
+
+<ResponseField name="date" type="Date" required>
+  Activity date
+</ResponseField>
+
+<ResponseField name="miles" type="Double" required>
+  Distance in miles
+</ResponseField>
+
+<ResponseField name="elevationGainMeters" type="Double" required>
+  Elevation gain in meters
+</ResponseField>
+
+<ResponseField name="kudosCount" type="Int" required>
+  Number of kudos received
+</ResponseField>
+
+<ResponseField name="movingTimeSeconds" type="Int" required>
+  Moving time in seconds
+</ResponseField>
+
+<ResponseField name="activityType" type="ActivityType?" required>
+  Type of activity (optional)
+</ResponseField>
+
+```swift
+let peakActivity = PeakActivity(
+    id: 123456789,
+    name: "Morning Marathon",
+    date: Date(),
+    miles: 26.2,
+    elevationGainMeters: 450.0,
+    kudosCount: 42,
+    movingTimeSeconds: 9360,
+    activityType: .run
+)
+```
+
+</Expandable>
+
+<Expandable title="PacePoint">
+
+Pace data for a single activity, used in pace trend charts.
+
+<ResponseField name="date" type="Date" required>
+  Activity date
+</ResponseField>
+
+<ResponseField name="paceSecondsPerMile" type="Double" required>
+  Average pace in seconds per mile
+</ResponseField>
+
+<ResponseField name="activityName" type="String" required>
+  Name of the activity
+</ResponseField>
+
+<ResponseField name="miles" type="Double" required>
+  Distance covered in miles
+</ResponseField>
+
+<ResponseField name="activityType" type="ActivityType?">
+  Type of activity (default: nil)
+</ResponseField>
+
+```swift
+let pacePoint = PacePoint(
+    date: Date(),
+    paceSecondsPerMile: 480.0, // 8:00 min/mile
+    activityName: "Tuesday Tempo Run",
+    miles: 6.2,
+    activityType: .run
+)
+```
+
+</Expandable>
+
+<Expandable title="EffortPoint">
+
+Suffer score data for a single activity.
+
+<ResponseField name="date" type="Date" required>
+  Activity date
+</ResponseField>
+
+<ResponseField name="sufferScore" type="Int" required>
+  Strava suffer score indicating effort level
+</ResponseField>
+
+<ResponseField name="activityName" type="String" required>
+  Name of the activity
+</ResponseField>
+
+```swift
+let effortPoint = EffortPoint(
+    date: Date(),
+    sufferScore: 142,
+    activityName: "Hill Repeats"
+)
+```
+
+</Expandable>
+
+<Expandable title="WeeklyEffort">
+
+Aggregated effort metrics for a week.
+
+<ResponseField name="weekStart" type="Date" required>
+  Start date of the week
+</ResponseField>
+
+<ResponseField name="totalSufferScore" type="Int" required>
+  Sum of suffer scores for all activities
+</ResponseField>
+
+<ResponseField name="activityCount" type="Int" required>
+  Number of activities with suffer scores
+</ResponseField>
+
+```swift
+let weeklyEffort = WeeklyEffort(
+    weekStart: weekDate,
+    totalSufferScore: 845,
+    activityCount: 6
+)
+```
+
+</Expandable>

@@ -1,0 +1,340 @@
+---
+title: 'ActivityCache'
+description: 'Actor for caching Strava activity data to the filesystem'
+---
+
+## Overview
+
+`ActivityCache` is a thread-safe actor that manages local caching of Strava activity data. It stores fetched activities and heatmap data organized by activity type buckets, enabling offline access and reducing API calls.
+
+## Initialization
+
+```swift
+public actor ActivityCache {
+    public static let shared = ActivityCache()
+    
+    public init()
+}
+```
+
+The cache stores data in the app group container at the path specified by `SharedConstants.cacheFileName`.
+
+## Data Structures
+
+### CachedPayload
+
+```swift
+public struct CachedPayload: Codable, Sendable {
+    public let fetchedAt: Date
+    public let heatmapDays: [HeatmapDay]
+    public let activities: [StravaActivity]?
+    
+    public init(
+        fetchedAt: Date,
+        heatmapDays: [HeatmapDay],
+        activities: [StravaActivity]? = nil
+    )
+    
+    public func isFresh(maxAge: TimeInterval) -> Bool
+}
+```
+
+Represents cached activity data with metadata:
+
+<ParamField path="fetchedAt" type="Date">
+  Timestamp when the data was fetched from the API
+</ParamField>
+
+<ParamField path="heatmapDays" type="[HeatmapDay]">
+  Aggregated activity data by day for heatmap visualization
+</ParamField>
+
+<ParamField path="activities" type="[StravaActivity]?">
+  Optional raw activity data
+</ParamField>
+
+#### isFresh
+
+Checks if the cached data is still fresh based on age.
+
+```swift
+public func isFresh(maxAge: TimeInterval) -> Bool
+```
+
+<ParamField path="maxAge" type="TimeInterval" required>
+  Maximum age in seconds for the cache to be considered fresh
+</ParamField>
+
+**Returns:** `true` if the time since `fetchedAt` is less than or equal to `maxAge`
+
+**Example:**
+
+```swift
+if let cached = await cache.read(selectedTypes: [.run]) {
+    // Cache is fresh if fetched within last hour
+    if cached.isFresh(maxAge: 3600) {
+        print("Using cached data")
+    } else {
+        print("Cache expired, fetching new data")
+    }
+}
+```
+
+## Methods
+
+### read
+
+Reads cached data for a specific set of activity types.
+
+```swift
+public func read(selectedTypes: Set<ActivityType>) -> CachedPayload?
+```
+
+<ParamField path="selectedTypes" type="Set<ActivityType>" required>
+  Activity types to read from cache. Used to generate the cache key
+</ParamField>
+
+**Returns:** `CachedPayload?` - The cached data, or `nil` if no cache exists or read fails
+
+**Implementation Details:**
+- Returns `nil` if cache file doesn't exist or cannot be read
+- Returns `nil` if JSON decoding fails
+- Cache is keyed by sorted, comma-separated activity type raw values
+- Different activity type combinations have separate cache entries
+
+**Example:**
+
+```swift
+let cache = ActivityCache.shared
+
+if let cached = await cache.read(selectedTypes: [.run, .ride]) {
+    print("Cached \(cached.heatmapDays.count) days")
+    print("Fetched at: \(cached.fetchedAt)")
+    
+    if cached.isFresh(maxAge: 1800) { // 30 minutes
+        // Use cached data
+        return cached.heatmapDays
+    }
+}
+
+// No cache or expired - fetch from API
+let fresh = try await client.fetchActivities(...)
+```
+
+### write
+
+Writes activity data to the cache for a specific set of activity types.
+
+```swift
+public func write(
+    heatmapDays: [HeatmapDay],
+    selectedTypes: Set<ActivityType>,
+    activities: [StravaActivity]? = nil
+)
+```
+
+<ParamField path="heatmapDays" type="[HeatmapDay]" required>
+  Aggregated activity data by day to cache
+</ParamField>
+
+<ParamField path="selectedTypes" type="Set<ActivityType>" required>
+  Activity types this data represents. Used to generate the cache key
+</ParamField>
+
+<ParamField path="activities" type="[StravaActivity]?" default="nil">
+  Optional raw activity data to cache alongside the heatmap
+</ParamField>
+
+**Implementation Details:**
+- Creates or updates cache entry for the specified activity types
+- Preserves existing cache entries for other activity type combinations
+- Automatically sets `fetchedAt` to current time
+- Uses atomic write operations to prevent corruption
+- Silently fails if cache directory is not accessible
+
+**Example:**
+
+```swift
+// Fetch and cache activities
+let activities = try await client.fetchRawActivities(
+    selectedTypes: [.run],
+    maxPages: 5,
+    perPage: 100,
+    after: startDate
+)
+
+let heatmapDays = aggregateActivities(activities)
+
+// Write to cache
+await cache.write(
+    heatmapDays: heatmapDays,
+    selectedTypes: [.run],
+    activities: activities
+)
+```
+
+### clear
+
+Deletes all cached data by removing the cache file.
+
+```swift
+public func clear()
+```
+
+**Implementation Details:**
+- Removes the entire cache file from the app group container
+- Clears all activity type buckets at once
+- Silently succeeds if cache file doesn't exist
+- Does not throw errors
+
+**Example:**
+
+```swift
+// Clear cache on logout
+await tokenManager.clearToken()
+await cache.clear()
+
+// Clear cache on user request
+Button("Clear Cache") {
+    Task {
+        await ActivityCache.shared.clear()
+    }
+}
+```
+
+## Cache Key Strategy
+
+The cache uses activity types to create unique keys:
+
+```swift
+private func cacheKey(for selectedTypes: Set<ActivityType>) -> String {
+    selectedTypes.map(\.rawValue).sorted().joined(separator: ",")
+}
+```
+
+**Examples:**
+- `[.run]` → `"Run"`
+- `[.ride, .run]` → `"Ride,Run"` (sorted alphabetically)
+- `[.swim, .run, .ride]` → `"Ride,Run,Swim"`
+
+This allows separate caches for different activity type combinations:
+
+```swift
+// These create separate cache entries
+await cache.write(heatmapDays: runData, selectedTypes: [.run])
+await cache.write(heatmapDays: rideData, selectedTypes: [.ride])
+await cache.write(heatmapDays: bothData, selectedTypes: [.run, .ride])
+
+// Reading specific cache
+let runCache = await cache.read(selectedTypes: [.run])
+let rideCache = await cache.read(selectedTypes: [.ride])
+let bothCache = await cache.read(selectedTypes: [.run, .ride])
+```
+
+## Storage Location
+
+The cache file is stored in the app group container:
+
+```swift
+private var cacheURL: URL? {
+    let fm = FileManager.default
+    guard let container = fm.containerURL(
+        forSecurityApplicationGroupIdentifier: SharedConstants.appGroupIdentifier
+    ) else {
+        return nil
+    }
+    return container.appendingPathComponent(SharedConstants.cacheFileName)
+}
+```
+
+**Requirements:**
+- App group entitlement must be configured
+- `SharedConstants.appGroupIdentifier` must be set
+- Returns `nil` if app group is not available
+
+**Benefits of App Group Storage:**
+- Cache accessible from app and widgets
+- Survives app reinstall if using iCloud container
+- Shared between app targets
+
+## Internal Storage Format
+
+```swift
+private struct Store: Codable {
+    var buckets: [String: CachedPayload]
+}
+```
+
+The cache file contains a dictionary mapping cache keys to payloads:
+
+```json
+{
+  "buckets": {
+    "Run": {
+      "fetchedAt": "2026-02-28T10:30:00Z",
+      "heatmapDays": [...],
+      "activities": [...]
+    },
+    "Ride,Run": {
+      "fetchedAt": "2026-02-28T11:00:00Z",
+      "heatmapDays": [...],
+      "activities": null
+    }
+  }
+}
+```
+
+## Usage Pattern
+
+Typical flow for cache-first data fetching:
+
+```swift
+func loadActivities(selectedTypes: Set<ActivityType>) async throws -> [HeatmapDay] {
+    let cache = ActivityCache.shared
+    
+    // 1. Check cache first
+    if let cached = await cache.read(selectedTypes: selectedTypes) {
+        // 2. Use cached data if fresh (within 30 minutes)
+        if cached.isFresh(maxAge: 1800) {
+            return cached.heatmapDays
+        }
+    }
+    
+    // 3. Fetch from API
+    let client = StravaAPIClient.shared
+    let activities = try await client.fetchRawActivities(
+        selectedTypes: selectedTypes,
+        maxPages: 8,
+        perPage: 100,
+        after: Date().addingTimeInterval(-365 * 24 * 3600)
+    )
+    
+    let heatmapDays = aggregateActivities(activities)
+    
+    // 4. Update cache
+    await cache.write(
+        heatmapDays: heatmapDays,
+        selectedTypes: selectedTypes,
+        activities: activities
+    )
+    
+    return heatmapDays
+}
+```
+
+## Thread Safety
+
+As an actor, `ActivityCache` guarantees:
+- **Serial access:** All operations are serialized automatically
+- **No race conditions:** Multiple concurrent reads/writes are safe
+- **Sendable types:** All public types conform to `Sendable`
+
+```swift
+// Safe to call concurrently
+Task {
+    await cache.write(heatmapDays: data1, selectedTypes: [.run])
+}
+Task {
+    await cache.write(heatmapDays: data2, selectedTypes: [.ride])
+}
+```

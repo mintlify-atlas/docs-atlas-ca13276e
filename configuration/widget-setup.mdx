@@ -1,0 +1,179 @@
+---
+title: "Widget Setup"
+description: "Add and configure Stratiles widgets on your iOS home screen"
+---
+
+## Overview
+
+Stratiles provides iOS home screen widgets that display your activity heatmap directly on your home screen. Widgets update automatically to show your latest activities and maintain your current activity type selection.
+
+## Available Widget Sizes
+
+Stratiles supports two widget sizes:
+
+- **Small Widget** - Compact heatmap view perfect for a quick glance at your activity consistency
+- **Medium Widget** - Expanded heatmap with more detail and a larger date range
+
+<Info>
+Both widgets display the same data as your in-app heatmap, filtered by your selected activity types.
+</Info>
+
+## Adding a Widget
+
+<Steps>
+  <Step title="Long-press your Home Screen">
+    Press and hold on an empty area of your iOS home screen until the apps start jiggling.
+  </Step>
+  
+  <Step title="Tap Add Widget">
+    Tap the "+" button that appears in the top left corner of the screen (or tap "Edit Home Screen" if you see that option first).
+  </Step>
+  
+  <Step title="Search for Stratiles">
+    Scroll through the widget gallery or use the search bar at the top to find "Stratiles".
+  </Step>
+  
+  <Step title="Select Widget Size">
+    Swipe left or right to choose between the Small and Medium widget sizes. Preview how each will look on your home screen.
+  </Step>
+  
+  <Step title="Add to Home Screen">
+    Tap "Add Widget" to place it on your home screen. You can drag it to reposition it wherever you like.
+  </Step>
+  
+  <Step title="Done">
+    Tap "Done" in the top right corner to finish editing your home screen.
+  </Step>
+</Steps>
+
+<Tip>
+You can add multiple Stratiles widgets to your home screen. They'll all display the same data based on your activity type selection.
+</Tip>
+
+## Widget Display
+
+Stratiles widgets show a GitHub-style contribution heatmap:
+
+- **Grid Layout**: Each square represents one day of activities
+- **Color Intensity**: Darker colors indicate higher activity volume (distance in miles)
+- **Activity Count**: Shows the total number of activities for that day
+- **Date Range**: Displays recent weeks of activity data
+- **Real-time Updates**: Automatically refreshes based on iOS widget timeline policies
+
+## Widget Updates
+
+Widgets automatically update in several scenarios:
+
+### Automatic Updates
+
+- **Timeline Refresh**: iOS periodically refreshes widgets based on the timeline provider schedule
+- **Activity Type Changes**: When you change selected activity types in Settings, widgets refresh immediately
+- **New Activities**: After syncing new activities from Strava, widgets update to reflect the latest data
+- **Sign Out**: Widgets clear their data when you disconnect your Strava account
+
+### Manual Updates
+
+While widgets update automatically, you can also trigger updates:
+
+1. Open the Stratiles app to sync your latest activities
+2. Changes to activity type selections in Settings trigger immediate widget reloads
+3. Signing out and back in refreshes all widget data
+
+<Info>
+Widget updates use iOS's WidgetKit timeline system. The app calls `WidgetCenter.shared.reloadAllTimelines()` whenever data changes.
+</Info>
+
+## Widget Configuration
+
+### Activity Type Filtering
+
+Widgets respect your activity type selection from the main app:
+
+1. Open Stratiles and tap the settings icon
+2. Toggle activity types on or off in any of the five categories
+3. Widgets automatically update to show only the selected activity types
+
+The activity type configuration is shared between the app and widgets using App Groups, ensuring consistent data across both.
+
+### Data Source
+
+Widgets display:
+- **Distance**: Total miles for each day (converted from meters)
+- **Activity Count**: Number of activities recorded per day
+- **Date Range**: Recent weeks based on widget size
+- **Filtered Data**: Only activities matching your selected types
+
+<Warning>
+Widgets require an active Strava connection. If you sign out, widgets will display an empty or placeholder state until you reconnect.
+</Warning>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Widget shows no data">
+    If your widget appears empty:
+    - Open the Stratiles app to ensure you're signed in to Strava
+    - Verify you have activities recorded in your selected activity types
+    - Check that you've granted the app permission to access your Strava data
+    - Try removing and re-adding the widget
+  </Accordion>
+  
+  <Accordion title="Widget not updating">
+    If your widget shows outdated data:
+    - Open the Stratiles app to trigger a sync
+    - iOS controls widget refresh frequency; widgets may not update immediately
+    - Ensure Background App Refresh is enabled for Stratiles in iOS Settings
+    - Try changing your activity type selection to force a widget reload
+  </Accordion>
+  
+  <Accordion title="Widget shows different data than app">
+    If the widget and app display don't match:
+    - Wait a moment for the widget to refresh after opening the app
+    - Check your activity type selection; recent changes may take a moment to propagate
+    - Remove and re-add the widget to force a complete refresh
+    - Verify App Groups are properly configured (this is automatic in production builds)
+  </Accordion>
+  
+  <Accordion title="Can't find Stratiles in widget gallery">
+    If Stratiles doesn't appear when adding widgets:
+    - Ensure you have the latest version of the app installed
+    - Try restarting your device
+    - Verify the app is properly installed and not offloaded
+    - Use the search function in the widget gallery rather than scrolling
+  </Accordion>
+</AccordionGroup>
+
+## Widget Technical Details
+
+Stratiles widgets are built using iOS WidgetKit:
+
+- **Widget Kind**: `StratilesWidget`
+- **Configuration Type**: Static Configuration (no user-configurable parameters)
+- **Timeline Provider**: `HeatmapTimelineProvider` manages update scheduling
+- **Supported Families**: `.systemSmall`, `.systemMedium`
+- **Content Margins**: Disabled for edge-to-edge heatmap display
+- **Display Name**: "Stratiles"
+- **Description**: "GitHub-style contribution heatmap for your selected Strava activity types"
+
+### Data Sharing
+
+The app and widgets share data using:
+- **App Groups**: Enables shared UserDefaults for activity type preferences
+- **Shared Cache**: Activity data is accessible to both the app and widget extension
+- **Token Manager**: Authentication tokens are shared via Keychain
+
+<Info>
+Widgets use the same `StratilesCore` framework as the main app, ensuring consistent data processing and display logic.
+</Info>
+
+## Best Practices
+
+- **Widget Placement**: Place widgets where you'll see them daily for motivation
+- **Multiple Widgets**: Use both small and medium sizes for different views
+- **Activity Types**: Configure activity types in the main app before relying on widgets
+- **Regular Syncing**: Open the app occasionally to ensure fresh data
+- **Battery Impact**: Widgets are designed for minimal battery usage through efficient timeline management
+
+<Tip>
+For the most up-to-date widget data, open the Stratiles app after recording new activities on Strava. This triggers an immediate sync and widget refresh.
+</Tip>

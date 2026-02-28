@@ -1,0 +1,77 @@
+---
+title: HeatmapColors
+description: Color scheme utilities for rendering heatmap tiles based on activity intensity levels
+---
+
+`HeatmapColors` is an enum containing static utilities for generating colors for heatmap tiles. It provides color mixing functionality to create a gradient from muted background colors to Strava orange based on activity intensity.
+
+## Properties
+
+### colorMixByLevel
+
+```swift
+public static let colorMixByLevel: [Double]
+```
+
+Array of color mix ratios for each intensity level (0-4). Each value represents how much of the Strava orange color to blend with the muted background color.
+
+**Value:**
+```swift
+[0.0, 0.50, 0.70, 0.85, 1.0]
+```
+
+- Level 0: 0% Strava orange (fully muted)
+- Level 1: 50% Strava orange
+- Level 2: 70% Strava orange
+- Level 3: 85% Strava orange
+- Level 4: 100% Strava orange
+
+## Methods
+
+### tileColor
+
+```swift
+public static func tileColor(level: Int, colorScheme: ColorScheme) -> Color
+```
+
+Generates a color for a heatmap tile based on the activity intensity level and current color scheme. The color is computed by blending a muted background color with Strava orange (RGB: 252, 82, 0) according to the level's mix ratio.
+
+<ParamField path="level" type="Int">
+  The intensity level (0-4) for the tile. Values outside this range are clamped to 0-4.
+</ParamField>
+
+<ParamField path="colorScheme" type="ColorScheme">
+  The current color scheme (`.light` or `.dark`) determining the muted background color
+</ParamField>
+
+**Returns:** A `Color` object with RGB values interpolated between the muted background and Strava orange
+
+**Background Colors:**
+- Dark mode: RGB(0.17, 0.17, 0.19)
+- Light mode: RGB(0.90, 0.90, 0.90)
+
+**Example:**
+```swift
+import SwiftUI
+
+struct HeatmapTile: View {
+    let level: Int
+    @Environment(\.colorScheme) var colorScheme
+    
+    var body: some View {
+        Rectangle()
+            .fill(HeatmapColors.tileColor(level: level, colorScheme: colorScheme))
+            .frame(width: 12, height: 12)
+    }
+}
+
+// Usage with different levels
+let color0 = HeatmapColors.tileColor(level: 0, colorScheme: .light)
+// Returns: Muted gray background
+
+let color4 = HeatmapColors.tileColor(level: 4, colorScheme: .dark)
+// Returns: Full Strava orange
+
+let color2 = HeatmapColors.tileColor(level: 2, colorScheme: .light)
+// Returns: 70% blend between muted gray and Strava orange
+```

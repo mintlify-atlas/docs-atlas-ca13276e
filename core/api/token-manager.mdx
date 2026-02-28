@@ -1,0 +1,243 @@
+---
+title: 'TokenManager'
+description: 'Actor for secure storage and retrieval of Strava authentication tokens'
+---
+
+## Overview
+
+`TokenManager` is a thread-safe actor that manages Strava OAuth tokens using the iOS Keychain. It provides secure storage, retrieval, and deletion of authentication tokens with support for app groups and keychain access control.
+
+## Initialization
+
+```swift
+public actor TokenManager {
+    public static let shared = TokenManager()
+    
+    public init()
+}
+```
+
+The manager uses these keychain attributes:
+- **Service:** `com.mattbolanos.stratiles.tokens`
+- **Account:** `strava`
+- **Synchronizable:** `false` (tokens are not synced via iCloud)
+
+## Methods
+
+### loadToken
+
+Retrieves the stored Strava token from the keychain.
+
+```swift
+public func loadToken() -> StravaToken?
+```
+
+**Returns:** `StravaToken?` - The stored token, or `nil` if no token exists or decoding fails
+
+**Implementation Details:**
+- Uses `kSecClassGenericPassword` for storage
+- Queries keychain with `kSecMatchLimitOne` to retrieve single item
+- Automatically decodes JSON data to `StravaToken`
+- Returns `nil` silently if keychain access fails or token doesn't exist
+- Respects app group access if `AppIdentifierPrefix` is configured
+
+**Example:**
+
+```swift
+let manager = TokenManager.shared
+
+if let token = await manager.loadToken() {
+    print("Access token: \(token.accessToken)")
+    print("Expires at: \(Date(timeIntervalSince1970: token.expiresAt))")
+} else {
+    print("No token found")
+}
+```
+
+### saveToken
+
+Securely stores a Strava token in the keychain.
+
+```swift
+public func saveToken(_ token: StravaToken) throws
+```
+
+<ParamField path="token" type="StravaToken" required>
+  The token to store, containing access token, refresh token, and expiration time
+</ParamField>
+
+**Throws:** `TokenManagerError.keychainOperationFailed(OSStatus)` if keychain operations fail
+
+**Implementation Details:**
+- First attempts to update existing token with `SecItemUpdate`
+- If no token exists (`errSecItemNotFound`), adds new item with `SecItemAdd`
+- Uses `kSecAttrAccessibleAfterFirstUnlock` for accessibility
+- Encodes token as JSON before storing
+- Supports app group sharing via access group
+
+**Example:**
+
+```swift
+let token = StravaToken(
+    accessToken: "abc123",
+    refreshToken: "xyz789",
+    expiresAt: Date().addingTimeInterval(3600).timeIntervalSince1970
+)
+
+do {
+    try await manager.saveToken(token)
+    print("Token saved successfully")
+} catch TokenManagerError.keychainOperationFailed(let status) {
+    print("Keychain error: \(status)")
+}
+```
+
+### clearToken
+
+Deletes the stored token from the keychain.
+
+```swift
+public func clearToken()
+```
+
+**Implementation Details:**
+- Calls `SecItemDelete` to remove the token
+- Does not throw errors - silently succeeds even if no token exists
+- Useful for logout flows or when resetting authentication
+
+**Example:**
+
+```swift
+await manager.clearToken()
+print("Token cleared")
+```
+
+### hasRefreshToken
+
+Checks if a valid refresh token is stored.
+
+```swift
+public func hasRefreshToken() -> Bool
+```
+
+**Returns:** `true` if a token exists and has a non-empty refresh token, `false` otherwise
+
+**Implementation Details:**
+- Loads the token using `loadToken()`
+- Returns `false` if no token exists
+- Checks that `refreshToken` property is not empty
+
+**Example:**
+
+```swift
+if await manager.hasRefreshToken() {
+    print("Can refresh access token")
+} else {
+    print("User needs to re-authenticate")
+}
+```
+
+## Error Handling
+
+### TokenManagerError
+
+```swift
+public enum TokenManagerError: Error {
+    case keychainOperationFailed(OSStatus)
+}
+```
+
+**Error Cases:**
+
+- `keychainOperationFailed(OSStatus)` - A keychain operation failed with the given status code
+
+**Common OSStatus Values:**
+- `errSecSuccess` (0) - Operation succeeded
+- `errSecItemNotFound` (-25300) - Item not found in keychain
+- `errSecDuplicateItem` (-25299) - Item already exists
+- `errSecAuthFailed` (-25293) - Authentication failed
+
+**Example Error Handling:**
+
+```swift
+do {
+    try await manager.saveToken(token)
+} catch TokenManagerError.keychainOperationFailed(let status) {
+    switch status {
+    case errSecDuplicateItem:
+        print("Token already exists")
+    case errSecAuthFailed:
+        print("Keychain authentication failed")
+    default:
+        print("Keychain error: \(status)")
+    }
+}
+```
+
+## Keychain Configuration
+
+### Access Group
+
+The manager automatically configures keychain access groups for app group sharing:
+
+```swift
+private var resolvedAccessGroup: String? {
+    let prefix = Bundle.main.object(forInfoDictionaryKey: "AppIdentifierPrefix") as? String
+    if let prefix {
+        return "\(prefix)com.mattbolanos.stratiles"
+    }
+    return nil
+}
+```
+
+**Requirements:**
+- `AppIdentifierPrefix` must be set in Info.plist for app group support
+- Format: `{prefix}com.mattbolanos.stratiles`
+- Allows sharing tokens between app and extensions
+
+### Keychain Query Structure
+
+All keychain operations use this base query:
+
+```swift
+var query: [String: Any] = [
+    kSecClass as String: kSecClassGenericPassword,
+    kSecAttrService as String: "com.mattbolanos.stratiles.tokens",
+    kSecAttrAccount as String: "strava",
+    kSecAttrSynchronizable as String: kCFBooleanFalse as Any,
+]
+query[kSecAttrAccessGroup as String] = resolvedAccessGroup
+```
+
+## Security Features
+
+- **Thread-safe:** Actor isolation ensures serial access to keychain operations
+- **Local-only:** Tokens are not synced via iCloud Keychain (`kSecAttrSynchronizable: false`)
+- **After first unlock:** Tokens accessible after device is unlocked once (`kSecAttrAccessibleAfterFirstUnlock`)
+- **App group support:** Tokens can be shared between app and extensions
+- **Atomic updates:** Uses `SecItemUpdate` first, then `SecItemAdd` to avoid race conditions
+
+## Usage Pattern
+
+Typical flow for managing tokens:
+
+```swift
+let manager = TokenManager.shared
+
+// 1. Check if user has authenticated
+if await manager.hasRefreshToken() {
+    // 2. Load existing token
+    if let token = await manager.loadToken() {
+        print("User is authenticated")
+    }
+} else {
+    // 3. User needs to authenticate
+    let newToken = try await authenticateUser()
+    
+    // 4. Save the new token
+    try await manager.saveToken(newToken)
+}
+
+// 5. Clear token on logout
+await manager.clearToken()
+```

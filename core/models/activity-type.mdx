@@ -1,0 +1,378 @@
+---
+title: ActivityType
+description: Enum representing all supported Strava activity types
+---
+
+## ActivityType
+
+Comprehensive enum of Strava activity types with categorization and matching logic.
+
+### Enum Cases
+
+#### Foot Sports
+
+<ResponseField name="run" type="String">
+  Raw value: "Run"
+</ResponseField>
+
+<ResponseField name="trailRun" type="String">
+  Raw value: "TrailRun"
+</ResponseField>
+
+<ResponseField name="walk" type="String">
+  Raw value: "Walk"
+</ResponseField>
+
+<ResponseField name="hike" type="String">
+  Raw value: "Hike"
+</ResponseField>
+
+<ResponseField name="wheelchair" type="String">
+  Raw value: "Wheelchair"
+</ResponseField>
+
+<ResponseField name="virtualRun" type="String">
+  Raw value: "VirtualRun"
+</ResponseField>
+
+#### Cycling
+
+<ResponseField name="ride" type="String">
+  Raw value: "Ride"
+</ResponseField>
+
+<ResponseField name="mountainBikeRide" type="String">
+  Raw value: "MountainBikeRide"
+</ResponseField>
+
+<ResponseField name="gravelRide" type="String">
+  Raw value: "GravelRide"
+</ResponseField>
+
+<ResponseField name="eBikeRide" type="String">
+  Raw value: "EBikeRide"
+</ResponseField>
+
+<ResponseField name="eMountainBikeRide" type="String">
+  Raw value: "EMountainBikeRide"
+</ResponseField>
+
+<ResponseField name="velomobile" type="String">
+  Raw value: "Velomobile"
+</ResponseField>
+
+<ResponseField name="handcycle" type="String">
+  Raw value: "Handcycle"
+</ResponseField>
+
+<ResponseField name="virtualRide" type="String">
+  Raw value: "VirtualRide"
+</ResponseField>
+
+#### Water Sports
+
+<ResponseField name="swim" type="String">
+  Raw value: "Swim"
+</ResponseField>
+
+<ResponseField name="rowing" type="String">
+  Raw value: "Rowing"
+</ResponseField>
+
+<ResponseField name="kayaking" type="String">
+  Raw value: "Kayaking"
+</ResponseField>
+
+<ResponseField name="canoeing" type="String">
+  Raw value: "Canoeing"
+</ResponseField>
+
+<ResponseField name="standUpPaddling" type="String">
+  Raw value: "StandUpPaddling"
+</ResponseField>
+
+<ResponseField name="surfing" type="String">
+  Raw value: "Surfing"
+</ResponseField>
+
+<ResponseField name="kitesurf" type="String">
+  Raw value: "Kitesurf"
+</ResponseField>
+
+<ResponseField name="windsurf" type="String">
+  Raw value: "Windsurf"
+</ResponseField>
+
+<ResponseField name="sail" type="String">
+  Raw value: "Sail"
+</ResponseField>
+
+#### Winter Sports
+
+<ResponseField name="alpineSki" type="String">
+  Raw value: "AlpineSki"
+</ResponseField>
+
+<ResponseField name="backcountrySki" type="String">
+  Raw value: "BackcountrySki"
+</ResponseField>
+
+<ResponseField name="nordicSki" type="String">
+  Raw value: "NordicSki"
+</ResponseField>
+
+<ResponseField name="snowboard" type="String">
+  Raw value: "Snowboard"
+</ResponseField>
+
+<ResponseField name="snowshoe" type="String">
+  Raw value: "Snowshoe"
+</ResponseField>
+
+<ResponseField name="iceSkate" type="String">
+  Raw value: "IceSkate"
+</ResponseField>
+
+#### Other Sports
+
+<ResponseField name="inlineSkate" type="String">
+  Raw value: "InlineSkate"
+</ResponseField>
+
+<ResponseField name="rollerSki" type="String">
+  Raw value: "RollerSki"
+</ResponseField>
+
+<ResponseField name="skateboard" type="String">
+  Raw value: "Skateboard"
+</ResponseField>
+
+<ResponseField name="soccer" type="String">
+  Raw value: "Soccer"
+</ResponseField>
+
+<ResponseField name="tennis" type="String">
+  Raw value: "Tennis"
+</ResponseField>
+
+<ResponseField name="padel" type="String">
+  Raw value: "Padel"
+</ResponseField>
+
+<ResponseField name="racquetball" type="String">
+  Raw value: "Racquetball"
+</ResponseField>
+
+<ResponseField name="squash" type="String">
+  Raw value: "Squash"
+</ResponseField>
+
+<ResponseField name="badminton" type="String">
+  Raw value: "Badminton"
+</ResponseField>
+
+<ResponseField name="pickleball" type="String">
+  Raw value: "Pickleball"
+</ResponseField>
+
+<ResponseField name="tableTennis" type="String">
+  Raw value: "TableTennis"
+</ResponseField>
+
+<ResponseField name="basketball" type="String">
+  Raw value: "Basketball"
+</ResponseField>
+
+<ResponseField name="volleyball" type="String">
+  Raw value: "Volleyball"
+</ResponseField>
+
+<ResponseField name="cricket" type="String">
+  Raw value: "Cricket"
+</ResponseField>
+
+<ResponseField name="dance" type="String">
+  Raw value: "Dance"
+</ResponseField>
+
+<ResponseField name="golf" type="String">
+  Raw value: "Golf"
+</ResponseField>
+
+<ResponseField name="elliptical" type="String">
+  Raw value: "Elliptical"
+</ResponseField>
+
+## Properties
+
+### defaultSelected
+
+```swift
+public static let defaultSelected: Set<ActivityType> = [
+    .run, .ride, .walk, .trailRun, .hike, .wheelchair
+]
+```
+
+Default set of activity types selected for filtering.
+
+### displayName
+
+```swift
+var displayName: String { get }
+```
+
+Human-readable display name for the activity type.
+
+```swift
+ActivityType.run.displayName // "Run"
+ActivityType.mountainBikeRide.displayName // "Mountain Bike Ride"
+ActivityType.standUpPaddling.displayName // "Stand Up Paddling"
+```
+
+### matchingValues
+
+```swift
+var matchingValues: Set<String> { get }
+```
+
+Set of normalized Strava API values that match this activity type. Values are lowercased with underscores removed.
+
+```swift
+ActivityType.run.matchingValues // ["run"]
+ActivityType.rowing.matchingValues // ["rowing", "virtualrow"]
+```
+
+### category
+
+```swift
+var category: Category { get }
+```
+
+The sport category this activity type belongs to.
+
+```swift
+ActivityType.run.category // .foot
+ActivityType.mountainBikeRide.category // .cycle
+ActivityType.swim.category // .water
+```
+
+## Methods
+
+### matches(type:sportType:)
+
+```swift
+public func matches(type: String, sportType: String) -> Bool
+```
+
+Matches against a Strava activity's type and sportType fields. Prefers sportType (more specific) when available, falls back to type.
+
+```swift
+let activityType = ActivityType.run
+activityType.matches(type: "Run", sportType: "Trail_Run") // false
+
+let trailRun = ActivityType.trailRun
+trailRun.matches(type: "Run", sportType: "Trail_Run") // true
+```
+
+### defaultsValue(for:)
+
+```swift
+public static func defaultsValue(for selection: [ActivityType]) -> [String]
+```
+
+Converts a selection to raw string values for storage. Returns defaultSelected if selection is empty.
+
+```swift
+let values = ActivityType.defaultsValue(for: [.run, .ride])
+// ["Run", "Ride"]
+
+let defaultValues = ActivityType.defaultsValue(for: [])
+// ["Run", "Ride", "Walk", "TrailRun", "Hike", "Wheelchair"]
+```
+
+### grouped()
+
+```swift
+public static func grouped() -> [(category: Category, types: [ActivityType])]
+```
+
+Returns all activity types grouped by category.
+
+```swift
+let grouped = ActivityType.grouped()
+for (category, types) in grouped {
+    print("\(category.rawValue): \(types.count) types")
+}
+```
+
+## Category
+
+Nested enum representing sport categories.
+
+### Cases
+
+<ResponseField name="foot" type="String">
+  Raw value: "Foot Sports"
+  
+  Icon: "figure.run"
+</ResponseField>
+
+<ResponseField name="cycle" type="String">
+  Raw value: "Cycling"
+  
+  Icon: "figure.outdoor.cycle"
+</ResponseField>
+
+<ResponseField name="water" type="String">
+  Raw value: "Water Sports"
+  
+  Icon: "figure.pool.swim"
+</ResponseField>
+
+<ResponseField name="winter" type="String">
+  Raw value: "Winter Sports"
+  
+  Icon: "snowflake"
+</ResponseField>
+
+<ResponseField name="other" type="String">
+  Raw value: "Other Sports"
+  
+  Icon: "sportscourt"
+</ResponseField>
+
+### Example Usage
+
+```swift
+// Filter activities by type
+let activities: [StravaActivity] = loadActivities()
+let runningActivities = activities.filter { activity in
+    ActivityType.run.matches(
+        type: activity.type,
+        sportType: activity.sportType
+    )
+}
+
+// Display grouped activity types
+let grouped = ActivityType.grouped()
+for (category, types) in grouped {
+    print(category.icon, category.rawValue)
+    for type in types {
+        print("  - \(type.displayName)")
+    }
+}
+
+// Check if activity matches any foot sport
+let footTypes: [ActivityType] = ActivityType.allCases.filter { $0.category == .foot }
+let isFootSport = footTypes.contains { type in
+    type.matches(type: activity.type, sportType: activity.sportType)
+}
+```
+
+## Conformances
+
+- `String` raw value
+- `CaseIterable`
+- `Codable`
+- `Hashable`
+- `Sendable`

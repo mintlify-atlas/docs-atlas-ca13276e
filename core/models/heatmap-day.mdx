@@ -1,0 +1,103 @@
+---
+title: HeatmapDay
+description: Daily activity data for calendar heatmap visualization
+---
+
+## HeatmapDay
+
+Represents a single day's aggregated activity data, used to render calendar heatmaps showing training intensity over time.
+
+<ResponseField name="date" type="String" required>
+  Date identifier in string format (typically ISO 8601 format like "2024-01-15")
+</ResponseField>
+
+<ResponseField name="miles" type="Double" required>
+  Total distance covered on this day in miles
+</ResponseField>
+
+<ResponseField name="activityCount" type="Int" required>
+  Number of activities completed on this day
+</ResponseField>
+
+<ResponseField name="distanceMeters" type="Double" required>
+  Total distance covered in meters (raw metric value)
+</ResponseField>
+
+## Example
+
+```swift
+let heatmapDay = HeatmapDay(
+    date: "2024-01-15",
+    miles: 6.2,
+    activityCount: 1,
+    distanceMeters: 9978.0
+)
+```
+
+## Usage in Heatmaps
+
+HeatmapDay objects are typically used in arrays to populate calendar visualizations:
+
+```swift
+// Generate heatmap data for a year
+let calendar = Calendar.current
+let startDate = calendar.date(from: DateComponents(year: 2024, month: 1, day: 1))!
+let endDate = calendar.date(from: DateComponents(year: 2024, month: 12, day: 31))!
+
+let activities: [StravaActivity] = loadActivities()
+var heatmapDays: [HeatmapDay] = []
+
+// Group activities by date
+let groupedByDate = Dictionary(grouping: activities) { activity in
+    calendar.startOfDay(for: activity.startDateLocal)
+}
+
+// Create HeatmapDay for each date
+for (date, dayActivities) in groupedByDate {
+    let totalMeters = dayActivities.reduce(0.0) { $0 + $1.distance }
+    let totalMiles = totalMeters / 1609.34
+    
+    let day = HeatmapDay(
+        date: date.formatted(.iso8601.year().month().day()),
+        miles: totalMiles,
+        activityCount: dayActivities.count,
+        distanceMeters: totalMeters
+    )
+    heatmapDays.append(day)
+}
+
+// Use in ActivityInsights
+let insights = ActivityInsights(
+    // ... other parameters
+    heatmapDays: heatmapDays,
+    // ... remaining parameters
+)
+```
+
+## Visualization
+
+HeatmapDay data is commonly used to render calendar grids where:
+
+- Each cell represents one day
+- Cell color intensity indicates activity level (based on miles or activityCount)
+- Tooltips show detailed metrics on hover
+
+```swift
+// Calculate color intensity for visualization
+func colorIntensity(for day: HeatmapDay, maxMiles: Double) -> Double {
+    return day.miles / maxMiles
+}
+
+let maxDailyMiles = heatmapDays.map(\.miles).max() ?? 1.0
+
+for day in heatmapDays {
+    let intensity = colorIntensity(for: day, maxMiles: maxDailyMiles)
+    // Apply intensity to color: 0.0 = light, 1.0 = dark
+}
+```
+
+## Conformances
+
+- `Codable` - Can be encoded/decoded to JSON
+- `Hashable` - Can be used in Sets and Dictionary keys
+- `Sendable` - Safe to share across concurrency domains

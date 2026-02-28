@@ -1,0 +1,124 @@
+---
+title: HeatmapBuilder
+description: Core utility for building heatmap data structures and converting dates to heatmap keys
+---
+
+`HeatmapBuilder` is an enum containing static methods for building heatmap view models from activity data. It handles date conversions, level calculations, and grid construction for activity heatmaps.
+
+## Properties
+
+### dayLabels
+
+```swift
+public static let dayLabels: [(key: String, label: String)]
+```
+
+Array of day label tuples for displaying weekday names in the heatmap. Contains 7 entries from Sunday to Saturday, with labels shown only for Mon, Wed, and Fri.
+
+**Value:**
+```swift
+[
+    ("sun", ""),
+    ("mon", "Mon"),
+    ("tue", ""),
+    ("wed", "Wed"),
+    ("thu", ""),
+    ("fri", "Fri"),
+    ("sat", ""),
+]
+```
+
+## Methods
+
+### toDateKey
+
+```swift
+public static func toDateKey(_ date: Date) -> String
+```
+
+Converts a date to a standardized string key in `YYYY-MM-DD` format.
+
+<ParamField path="date" type="Date">
+  The date to convert to a string key
+</ParamField>
+
+**Returns:** A string in the format `YYYY-MM-DD` (e.g., "2024-03-15")
+
+**Example:**
+```swift
+let date = Date()
+let key = HeatmapBuilder.toDateKey(date)
+// Returns: "2024-03-15"
+```
+
+### getLevel
+
+```swift
+public static func getLevel(miles: Double, maxMiles: Double) -> Int
+```
+
+Calculates the intensity level (0-4) for a given mileage relative to the maximum mileage.
+
+<ParamField path="miles" type="Double">
+  The mileage for the day
+</ParamField>
+
+<ParamField path="maxMiles" type="Double">
+  The maximum mileage across all days
+</ParamField>
+
+**Returns:** An integer from 0 to 4, where:
+- 0: No activity (miles or maxMiles is 0 or negative)
+- 1-4: Increasing intensity levels based on the ratio of miles to maxMiles
+
+**Example:**
+```swift
+let level = HeatmapBuilder.getLevel(miles: 5.0, maxMiles: 10.0)
+// Returns: 2
+
+let noActivity = HeatmapBuilder.getLevel(miles: 0, maxMiles: 10.0)
+// Returns: 0
+```
+
+### buildHeatmapView
+
+```swift
+public static func buildHeatmapView(
+    heatmap: [HeatmapDay],
+    weeksToShow: Int = 52
+) -> HeatmapViewModel
+```
+
+Builds a complete heatmap view model from an array of heatmap days. Creates a grid structure starting from the beginning of the week containing the start date and ending at the end of the week containing today.
+
+<ParamField path="heatmap" type="[HeatmapDay]">
+  Array of heatmap day data containing dates, miles, and activity counts
+</ParamField>
+
+<ParamField path="weeksToShow" type="Int" default="52">
+  Number of weeks to display in the heatmap (defaults to 52 for one year)
+</ParamField>
+
+**Returns:** A `HeatmapViewModel` containing:
+- `weeks`: Array of `HeatmapWeek` objects with 7 cells each
+- `maxMiles`: The maximum mileage value across all days in the grid
+- `totalMiles`: Sum of all mileage in the grid
+- `today`: The current date (start of day)
+
+**Example:**
+```swift
+let heatmapData: [HeatmapDay] = [
+    HeatmapDay(date: "2024-01-01", miles: 5.2, activityCount: 1),
+    HeatmapDay(date: "2024-01-02", miles: 3.8, activityCount: 2),
+    // ... more days
+]
+
+let viewModel = HeatmapBuilder.buildHeatmapView(
+    heatmap: heatmapData,
+    weeksToShow: 26
+)
+
+print("Max miles: \(viewModel.maxMiles)")
+print("Total miles: \(viewModel.totalMiles)")
+print("Weeks: \(viewModel.weeks.count)")
+```

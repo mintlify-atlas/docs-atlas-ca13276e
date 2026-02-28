@@ -1,0 +1,88 @@
+---
+title: Introduction
+description: Overview of StratilesCore, the reusable Swift library powering Stratiles
+---
+
+StratilesCore is a Swift library that provides the core functionality for Stratiles, including Strava API integration, activity data processing, heatmap generation, and analytics.
+
+## What is StratilesCore?
+
+StratilesCore is a modular, reusable Swift library designed to power Stratiles applications across iOS, watchOS, and widget extensions. It encapsulates all the logic for:
+
+- Authenticating with the Strava API and managing OAuth tokens
+- Fetching and caching athlete activity data
+- Building GitHub-style activity heatmaps
+- Computing training insights and statistics
+- Persisting data across app and widget contexts
+
+The library is built with Swift's modern concurrency features, using actors for thread-safe API access and structured concurrency for efficient data processing.
+
+## Who Should Use StratilesCore?
+
+StratilesCore is designed for developers who want to:
+
+- **Build Strava integrations**: Leverage pre-built OAuth flows, token management, and API client implementations
+- **Create activity visualizations**: Generate heatmaps and charts from Strava activity data
+- **Analyze training data**: Access pre-computed insights like streaks, weekly volumes, peak performances, and training rhythm patterns
+- **Share code across platforms**: Use the same core logic in iOS apps, watchOS apps, and widgets
+
+The library abstracts away the complexities of the Strava API, data aggregation, and calendar calculations, allowing you to focus on building great user experiences.
+
+## Key Features
+
+### Strava API Integration
+
+- OAuth 2.0 authorization code exchange
+- Automatic token refresh with retry logic
+- Paginated activity fetching with configurable filters
+- Robust error handling and rate limit management
+
+### Data Models
+
+- Type-safe representations of Strava activities, tokens, and athlete data
+- Heatmap data structures optimized for visualization
+- Comprehensive activity insights with computed statistics
+
+### Heatmap Generation
+
+- GitHub-style contribution heatmaps
+- Flexible date ranges (52 weeks by default)
+- Automatic intensity level calculation
+- Month and day label generation
+
+### Activity Analytics
+
+- Current and longest activity streaks
+- Weekly training volumes
+- Training rhythm heatmaps (day of week × hour of day)
+- Activity type breakdowns
+- Peak day and activity identification
+- Pace and effort trend tracking
+
+### Caching and Storage
+
+- Secure token storage in the keychain
+- Activity data caching with App Group support
+- Automatic cache invalidation based on age
+- Support for multiple activity type filters
+
+## Getting Started
+
+<CardGroup cols={2}>
+  <Card title="Architecture" icon="sitemap" href="/core/architecture">
+    Understand the module structure and data flow
+  </Card>
+  <Card title="API Reference" icon="code" href="/core/api/strava-api-client">
+    Browse the complete API documentation
+  </Card>
+</CardGroup>
+
+## Requirements
+
+- iOS 16.0+ / watchOS 9.0+
+- Swift 5.9+
+- Xcode 15.0+
+
+## Integration
+
+StratilesCore is designed to be embedded as a Swift package or framework within your Xcode project. It requires Strava API credentials (`STRAVA_CLIENT_ID` and `STRAVA_CLIENT_SECRET`) to be configured in your app's `Info.plist`.

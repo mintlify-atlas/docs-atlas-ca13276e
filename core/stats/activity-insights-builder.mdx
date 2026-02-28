@@ -1,0 +1,264 @@
+---
+title: 'ActivityInsightsBuilder'
+description: 'Builds comprehensive analytics and insights from Strava activity data'
+---
+
+## Overview
+
+`ActivityInsightsBuilder` is an enum that provides static methods to build `ActivityInsights` from collections of Strava activities. It aggregates activity data into various metrics including heatmaps, streaks, weekly volumes, training rhythms, and peak performances.
+
+## Methods
+
+### build
+
+Builds complete activity insights from an array of Strava activities.
+
+```swift
+public static func build(
+    activities: [StravaActivity],
+    windowEnd: Date = Date(),
+    windowDays: Int = 366,
+    weeksToShow: Int = 52,
+    peakDayLimit: Int = 8,
+    peakActivityLimit: Int = 12
+) -> ActivityInsights
+```
+
+#### Parameters
+
+<ParamField path="activities" type="[StravaActivity]" required>
+  Array of Strava activities to analyze. Activities outside the time window will be filtered out.
+</ParamField>
+
+<ParamField path="windowEnd" type="Date" default="Date()">
+  End date of the analysis window. Defaults to the current date.
+</ParamField>
+
+<ParamField path="windowDays" type="Int" default="366">
+  Number of days to include in the analysis window, counting backwards from `windowEnd`.
+</ParamField>
+
+<ParamField path="weeksToShow" type="Int" default="52">
+  Number of weeks to display in the heatmap view.
+</ParamField>
+
+<ParamField path="peakDayLimit" type="Int" default="8">
+  Maximum number of peak days to include in the results.
+</ParamField>
+
+<ParamField path="peakActivityLimit" type="Int" default="12">
+  Maximum number of peak activities to include in the results.
+</ParamField>
+
+#### Returns
+
+<ResponseField name="ActivityInsights" type="ActivityInsights">
+  A comprehensive insights object containing aggregated metrics and analytics.
+
+  <Expandable title="properties">
+    <ResponseField name="windowStart" type="Date">
+      Start date of the analysis window
+    </ResponseField>
+
+    <ResponseField name="windowEnd" type="Date">
+      End date of the analysis window
+    </ResponseField>
+
+    <ResponseField name="isPartial" type="Bool">
+      Always `false` for full builds (see `buildPartial` for partial insights)
+    </ResponseField>
+
+    <ResponseField name="heatmapDays" type="[HeatmapDay]">
+      Array of daily activity aggregations for heatmap visualization
+    </ResponseField>
+
+    <ResponseField name="heatmapView" type="HeatmapViewModel">
+      View model for rendering the activity heatmap
+    </ResponseField>
+
+    <ResponseField name="totalActivities" type="Int">
+      Total number of activities in the window
+    </ResponseField>
+
+    <ResponseField name="totalMiles" type="Double">
+      Total distance in miles (rounded to 2 decimal places)
+    </ResponseField>
+
+    <ResponseField name="totalMovingHours" type="Double">
+      Total moving time in hours (rounded to 1 decimal place)
+    </ResponseField>
+
+    <ResponseField name="totalElevationGainMeters" type="Double">
+      Total elevation gain in feet (rounded to whole number)
+    </ResponseField>
+
+    <ResponseField name="totalKudos" type="Int">
+      Total kudos received across all activities
+    </ResponseField>
+
+    <ResponseField name="currentStreakDays" type="Int">
+      Length of the current active streak ending on `windowEnd`
+    </ResponseField>
+
+    <ResponseField name="longestStreakDays" type="Int">
+      Longest consecutive day streak within the window
+    </ResponseField>
+
+    <ResponseField name="weeklyVolumes" type="[WeeklyVolume]">
+      Weekly distance and activity aggregations
+    </ResponseField>
+
+    <ResponseField name="trainingRhythm" type="[TrainingRhythmCell]">
+      Heatmap of activity patterns by weekday and hour
+    </ResponseField>
+
+    <ResponseField name="maxRhythmCount" type="Int">
+      Maximum activity count in any rhythm cell (for scaling visualizations)
+    </ResponseField>
+
+    <ResponseField name="typeBreakdown" type="[ActivityTypeBreakdown]">
+      Distribution of activities by type (run, ride, swim, etc.)
+    </ResponseField>
+
+    <ResponseField name="peakDays" type="[PeakDay]">
+      Top days sorted by distance, limited to `peakDayLimit`
+    </ResponseField>
+
+    <ResponseField name="peakActivities" type="[PeakActivity]">
+      Top individual activities sorted by distance, limited to `peakActivityLimit`
+    </ResponseField>
+
+    <ResponseField name="pacePoints" type="[PacePoint]">
+      Pace data for activities over 500 meters with positive moving time
+    </ResponseField>
+
+    <ResponseField name="effortPoints" type="[EffortPoint]">
+      Suffer score data points for activities with available suffer scores
+    </ResponseField>
+
+    <ResponseField name="weeklyEffort" type="[WeeklyEffort]">
+      Weekly aggregations of suffer scores
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+#### Example
+
+```swift
+import StratilesCore
+
+// Fetch activities from Strava
+let activities: [StravaActivity] = await stravaClient.fetchActivities()
+
+// Build insights for the past year
+let insights = ActivityInsightsBuilder.build(
+    activities: activities,
+    windowEnd: Date(),
+    windowDays: 365,
+    weeksToShow: 52,
+    peakDayLimit: 10,
+    peakActivityLimit: 15
+)
+
+// Access computed metrics
+print("Total miles: \(insights.totalMiles)")
+print("Current streak: \(insights.currentStreakDays) days")
+print("Longest streak: \(insights.longestStreakDays) days")
+print("Total activities: \(insights.totalActivities)")
+
+// Display peak performance
+for peakDay in insights.peakDays {
+    print("\(peakDay.date): \(peakDay.miles) miles")
+}
+
+// Analyze training patterns
+for rhythmCell in insights.trainingRhythm {
+    print("Weekday \(rhythmCell.weekday) at hour \(rhythmCell.hour): \(rhythmCell.activityCount) activities")
+}
+```
+
+### buildPartial
+
+Builds partial activity insights from pre-computed heatmap data. This method provides limited insights when full activity data is unavailable.
+
+```swift
+public static func buildPartial(
+    heatmapDays: [HeatmapDay],
+    windowEnd: Date = Date(),
+    windowDays: Int = 366,
+    weeksToShow: Int = 52,
+    peakDayLimit: Int = 8
+) -> ActivityInsights
+```
+
+#### Parameters
+
+<ParamField path="heatmapDays" type="[HeatmapDay]" required>
+  Pre-computed daily activity aggregations
+</ParamField>
+
+<ParamField path="windowEnd" type="Date" default="Date()">
+  End date of the analysis window
+</ParamField>
+
+<ParamField path="windowDays" type="Int" default="366">
+  Number of days to include in the analysis window
+</ParamField>
+
+<ParamField path="weeksToShow" type="Int" default="52">
+  Number of weeks to display in the heatmap view
+</ParamField>
+
+<ParamField path="peakDayLimit" type="Int" default="8">
+  Maximum number of peak days to include
+</ParamField>
+
+#### Returns
+
+<ResponseField name="ActivityInsights" type="ActivityInsights">
+  A partial insights object with `isPartial` set to `true`. The following fields will have default/empty values:
+  - `totalMovingHours`: 0
+  - `totalElevationGainMeters`: 0
+  - `totalKudos`: 0
+  - `trainingRhythm`: empty array
+  - `maxRhythmCount`: 0
+  - `typeBreakdown`: empty array
+  - `peakActivities`: empty array
+  - `pacePoints`: empty array
+  - `effortPoints`: empty array
+  - `weeklyEffort`: empty array
+</ResponseField>
+
+#### Example
+
+```swift
+import StratilesCore
+
+// Use pre-computed heatmap data
+let heatmapDays: [HeatmapDay] = loadCachedHeatmap()
+
+// Build partial insights
+let insights = ActivityInsightsBuilder.buildPartial(
+    heatmapDays: heatmapDays,
+    windowEnd: Date(),
+    windowDays: 365
+)
+
+// Access available metrics
+print("Total miles: \(insights.totalMiles)")
+print("Total activities: \(insights.totalActivities)")
+print("Current streak: \(insights.currentStreakDays) days")
+
+// Note: Partial builds have limited data
+print("Is partial: \(insights.isPartial)") // true
+```
+
+## Notes
+
+- All distance values are converted from meters to miles using the conversion factor 1609.344 meters per mile
+- Elevation gain is converted from meters to feet using the conversion factor 3.28084 feet per meter
+- Activities are filtered by local start date to ensure correct timezone handling
+- Training rhythm uses UTC calendar to properly extract hour and weekday from Strava's local time format
+- Pace points only include activities with distance > 500 meters and positive moving time
+- Effort points only include activities with available suffer scores
+- Streaks count consecutive days with at least one activity

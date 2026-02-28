@@ -1,0 +1,285 @@
+---
+title: 'StravaAPIClient'
+description: 'Actor for managing Strava API requests and authentication'
+---
+
+## Overview
+
+`StravaAPIClient` is a thread-safe actor that handles all communication with the Strava API, including OAuth token exchange, token refresh, and activity data fetching. It provides automatic retry logic, token management, and activity aggregation.
+
+## Initialization
+
+```swift
+public actor StravaAPIClient {
+    public static let shared = StravaAPIClient()
+    
+    public init(tokenManager: TokenManager = .shared)
+}
+```
+
+<ParamField path="tokenManager" type="TokenManager" default=".shared">
+  The token manager instance to use for storing and retrieving authentication tokens
+</ParamField>
+
+## Methods
+
+### exchangeAuthorizationCode
+
+Exchanges an authorization code for a Strava access token during the OAuth flow.
+
+```swift
+public func exchangeAuthorizationCode(_ code: String) async throws -> StravaToken
+```
+
+<ParamField path="code" type="String" required>
+  The authorization code received from Strava OAuth callback
+</ParamField>
+
+**Returns:** `StravaToken` containing access token, refresh token, and expiration time
+
+**Throws:**
+- `StravaAPIClientError.missingConfiguration` - If Strava client ID or secret is not configured
+- `StravaAPIClientError.httpStatus(Int)` - If the API returns a non-2xx status code
+- `StravaAPIClientError.invalidResponse` - If the response cannot be parsed
+
+**Example:**
+
+```swift
+let client = StravaAPIClient.shared
+do {
+    let token = try await client.exchangeAuthorizationCode(authCode)
+    print("Access token: \(token.accessToken)")
+} catch StravaAPIClientError.httpStatus(let status) {
+    print("HTTP error: \(status)")
+}
+```
+
+### getAccessToken
+
+Retrieves a valid access token, automatically refreshing if expired.
+
+```swift
+public func getAccessToken(forceRefresh: Bool = false) async throws -> String
+```
+
+<ParamField path="forceRefresh" type="Bool" default="false">
+  When true, forces a token refresh even if the current token is not expired
+</ParamField>
+
+**Returns:** Valid access token string
+
+**Throws:**
+- `StravaAPIClientError.missingToken` - If no token is stored
+- `StravaAPIClientError.httpStatus(Int)` - If token refresh fails
+
+**Implementation Details:**
+- Checks token expiration before returning
+- Automatically refreshes expired tokens
+- Deduplicates concurrent refresh requests using a shared task
+
+**Example:**
+
+```swift
+// Get current token (refreshes if expired)
+let token = try await client.getAccessToken()
+
+// Force refresh
+let freshToken = try await client.getAccessToken(forceRefresh: true)
+```
+
+### fetchActivities
+
+Fetches activities from Strava and aggregates them by day.
+
+```swift
+public func fetchActivities(
+    selectedTypes: Set<ActivityType>,
+    maxPages: Int = 8,
+    perPage: Int = 100,
+    after: Date
+) async throws -> [HeatmapDay]
+```
+
+<ParamField path="selectedTypes" type="Set<ActivityType>" required>
+  Activity types to fetch. Defaults to `[.run]` if empty set is provided
+</ParamField>
+
+<ParamField path="maxPages" type="Int" default="8">
+  Maximum number of pages to fetch from the API
+</ParamField>
+
+<ParamField path="perPage" type="Int" default="100">
+  Number of activities per page (maximum 100)
+</ParamField>
+
+<ParamField path="after" type="Date" required>
+  Fetch activities that occurred after this date
+</ParamField>
+
+**Returns:** Array of `HeatmapDay` objects with aggregated distance and activity counts by date
+
+**Throws:**
+- `StravaAPIClientError.missingToken` - If no authentication token is available
+- `StravaAPIClientError.httpStatus(Int)` - If the first page request fails
+
+**Example:**
+
+```swift
+let calendar = Calendar.current
+let startDate = calendar.date(byAdding: .day, value: -30, to: Date())!
+
+let days = try await client.fetchActivities(
+    selectedTypes: [.run, .ride],
+    maxPages: 5,
+    perPage: 100,
+    after: startDate
+)
+
+for day in days {
+    print("\(day.date): \(day.miles) miles")
+}
+```
+
+### fetchRawActivities
+
+Fetches raw activity data without aggregation.
+
+```swift
+public func fetchRawActivities(
+    selectedTypes: Set<ActivityType>,
+    maxPages: Int = 8,
+    perPage: Int = 100,
+    after: Date
+) async throws -> [StravaActivity]
+```
+
+<ParamField path="selectedTypes" type="Set<ActivityType>" required>
+  Activity types to fetch. Defaults to `[.run]` if empty set is provided
+</ParamField>
+
+<ParamField path="maxPages" type="Int" default="8">
+  Maximum number of pages to fetch from the API
+</ParamField>
+
+<ParamField path="perPage" type="Int" default="100">
+  Number of activities per page (maximum 100)
+</ParamField>
+
+<ParamField path="after" type="Date" required>
+  Fetch activities that occurred after this date
+</ParamField>
+
+**Returns:** Array of `StravaActivity` objects filtered by selected types
+
+**Throws:**
+- `StravaAPIClientError.missingToken` - If no authentication token is available
+- `StravaAPIClientError.httpStatus(Int)` - If the first page request fails
+
+**Implementation Details:**
+- Automatically handles 401 errors by refreshing the token
+- Implements exponential backoff retry logic
+- Deduplicates activities by ID across pages
+- Stops pagination when a page returns fewer activities than `perPage`
+
+**Example:**
+
+```swift
+let activities = try await client.fetchRawActivities(
+    selectedTypes: [.run],
+    maxPages: 10,
+    perPage: 50,
+    after: Date().addingTimeInterval(-7 * 24 * 3600)
+)
+
+print("Fetched \(activities.count) activities")
+```
+
+## Error Handling
+
+### StravaAPIClientError
+
+```swift
+public enum StravaAPIClientError: Error {
+    case missingToken
+    case missingConfiguration
+    case invalidResponse
+    case requestFailed
+    case httpStatus(Int)
+}
+```
+
+**Error Cases:**
+
+- `missingToken` - No authentication token is stored in the keychain
+- `missingConfiguration` - Strava client ID or secret is missing from Info.plist
+- `invalidResponse` - The API response is not a valid HTTPURLResponse
+- `requestFailed` - Network request failed after all retry attempts
+- `httpStatus(Int)` - API returned an HTTP error status code
+
+## Configuration
+
+### StravaConfiguration
+
+```swift
+public struct StravaConfiguration: Sendable {
+    public let clientID: String
+    public let clientSecret: String
+    
+    public static let callbackURLScheme = "stratiles"
+    public static let callbackURL = "stratiles://localhost/callback"
+    
+    public static func current(bundle: Bundle = .main) throws -> StravaConfiguration
+}
+```
+
+Configuration is loaded from the app's Info.plist using these keys:
+- `STRAVA_CLIENT_ID`
+- `STRAVA_CLIENT_SECRET`
+
+**Throws:** `StravaAPIClientError.missingConfiguration` if keys are missing or empty
+
+## Retry Logic
+
+The client implements automatic retry with exponential backoff for:
+- HTTP 408 (Request Timeout)
+- HTTP 429 (Rate Limit)
+- HTTP 5xx (Server Errors)
+
+**Retry Behavior:**
+- Initial delay: 250ms
+- Maximum delay: 8000ms
+- Exponential backoff: `250 * 2^attempt` milliseconds
+- Respects `Retry-After` header when present
+- Default retry count: 3 attempts for most operations
+
+**Example Implementation:**
+
+```swift
+// From source code
+private func requestData(request: URLRequest, retries: Int) async throws -> (Data, HTTPURLResponse) {
+    for attempt in 0...retries {
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse else {
+                throw StravaAPIClientError.invalidResponse
+            }
+            
+            if isRetriable(status: http.statusCode), attempt < retries {
+                let delay = retryDelayMs(for: attempt, retryAfterHeader: http.value(forHTTPHeaderField: "retry-after"))
+                try await Task.sleep(nanoseconds: UInt64(delay) * 1_000_000)
+                continue
+            }
+            
+            return (data, http)
+        } catch {
+            if attempt >= retries {
+                throw error
+            }
+            let delay = min(250 * Int(pow(2.0, Double(attempt))), 8_000)
+            try await Task.sleep(nanoseconds: UInt64(delay) * 1_000_000)
+        }
+    }
+    
+    throw StravaAPIClientError.requestFailed
+}
+```

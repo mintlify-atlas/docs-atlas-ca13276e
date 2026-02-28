@@ -1,0 +1,177 @@
+---
+title: "Activity Types"
+description: "Select which Strava activity types to include in your heatmap"
+---
+
+## Overview
+
+Stratiles supports over 50 different activity types from Strava. You can customize which types appear in your heatmap and widgets, allowing you to focus on the sports and activities that matter most to you.
+
+## Default Selection
+
+By default, Stratiles tracks these activity types:
+- Run
+- Ride
+- Walk
+- Trail Run
+- Hike
+- Wheelchair
+
+These represent the most common distance-based activities on Strava.
+
+## Configuring Activity Types
+
+<Steps>
+  <Step title="Open Settings">
+    Tap the settings icon in the top right corner of the main heatmap view.
+  </Step>
+  
+  <Step title="Browse Categories">
+    Activity types are organized into five categories:
+    - Foot Sports
+    - Cycling
+    - Water Sports
+    - Winter Sports
+    - Other Sports
+  </Step>
+  
+  <Step title="Select Activities">
+    Toggle on the activity types you want to track. You can select as many or as few as you like.
+  </Step>
+  
+  <Step title="Automatic Sync">
+    Your changes are saved automatically. The app will refresh your heatmap and widgets to reflect your new selection.
+  </Step>
+</Steps>
+
+<Info>
+When you change your activity type selection, widgets on your home screen automatically update to show only the selected types.
+</Info>
+
+## Activity Categories
+
+### Foot Sports
+
+Distance-based activities on foot:
+
+- **Run** - Road running
+- **Trail Run** - Off-road trail running
+- **Walk** - Walking activities
+- **Hike** - Hiking and trekking
+- **Wheelchair** - Wheelchair activities
+- **Virtual Run** - Treadmill and virtual runs
+
+### Cycling
+
+All types of bike rides:
+
+- **Ride** - Standard bike rides
+- **Mountain Bike Ride** - Off-road mountain biking
+- **Gravel Ride** - Gravel and mixed-terrain cycling
+- **E-Bike Ride** - Electric bike rides
+- **E-Mountain Bike Ride** - Electric mountain bike rides
+- **Velomobile** - Velomobile activities
+- **Handcycle** - Handcycle rides
+- **Virtual Ride** - Indoor cycling and virtual rides
+
+### Water Sports
+
+Activities on or in the water:
+
+- **Swim** - Swimming activities
+- **Rowing** - Rowing and erg workouts
+- **Kayaking** - Kayak trips
+- **Canoeing** - Canoe trips
+- **Stand Up Paddling** - SUP activities
+- **Surfing** - Surfing sessions
+- **Kitesurf** - Kitesurfing
+- **Windsurf** - Windsurfing
+- **Sailing** - Sailing activities
+
+### Winter Sports
+
+Snow and ice activities:
+
+- **Alpine Ski** - Downhill skiing
+- **Backcountry Ski** - Backcountry and touring
+- **Nordic Ski** - Cross-country skiing
+- **Snowboard** - Snowboarding
+- **Snowshoe** - Snowshoeing
+- **Ice Skate** - Ice skating
+
+### Other Sports
+
+Additional distance and activity tracking:
+
+- **Inline Skate** - Inline skating and rollerblading
+- **Roller Ski** - Roller skiing
+- **Skateboard** - Skateboarding
+- **Football (Soccer)** - Soccer activities
+- **Tennis** - Tennis matches
+- **Padel** - Padel matches
+- **Racquetball** - Racquetball games
+- **Squash** - Squash matches
+- **Badminton** - Badminton games
+- **Pickleball** - Pickleball matches
+- **Table Tennis** - Table tennis games
+- **Basketball** - Basketball activities
+- **Volleyball** - Volleyball games
+- **Cricket** - Cricket activities
+- **Dance** - Dance workouts
+- **Golf** - Golf rounds
+- **Elliptical** - Elliptical trainer workouts
+
+## How Activity Matching Works
+
+Stratiles uses Strava's activity type and sport type fields to categorize your activities:
+
+1. **Sport Type First**: Strava's sport type field (more specific) is checked first
+2. **Fallback to Type**: If sport type is not available, the general activity type is used
+3. **Normalized Matching**: Types are matched case-insensitively with underscores removed
+4. **Special Cases**: Some activity types match multiple Strava sport types (e.g., Rowing matches both "rowing" and "virtualrow")
+
+<Tip>
+If an activity doesn't appear in your heatmap, verify that you've enabled its activity type in Settings. Some activities may use specific sport types that map to Stratiles categories.
+</Tip>
+
+## Filtering Behavior
+
+- **Empty Selection**: If you deselect all activity types, Stratiles automatically reverts to the default selection (Run)
+- **Retroactive Filtering**: Changing your selection filters your entire activity history, not just new activities
+- **Widget Updates**: All home screen widgets automatically update when you change activity types
+- **Data Fetching**: Stratiles fetches all your activities from Strava and filters them locally based on your selection
+
+<Warning>
+Stratiles fetches up to 800 recent activities (8 pages × 100 activities per page). If you have more activities than this limit, older activities may not appear.
+</Warning>
+
+## Use Cases
+
+<AccordionGroup>
+  <Accordion title="Track only running activities">
+    Enable only Run, Trail Run, and Virtual Run to create a running-specific heatmap. Perfect for runners who want to focus on their running consistency.
+  </Accordion>
+  
+  <Accordion title="Multi-sport training">
+    Enable Run, Ride, and Swim to track triathlon training. Your heatmap will show all three sports combined, giving you a complete view of your training volume.
+  </Accordion>
+  
+  <Accordion title="Seasonal sports">
+    Enable Winter Sports during ski season and switch to Cycling in summer. Your historical data remains intact when you change selections.
+  </Accordion>
+  
+  <Accordion title="Everything tracked">
+    Enable all 50+ activity types to see your complete fitness picture. Great for athletes who cross-train across multiple disciplines.
+  </Accordion>
+</AccordionGroup>
+
+## Technical Details
+
+- Activity type preferences are stored in UserDefaults using App Groups
+- The selected types are shared between the main app and widgets
+- Changes trigger an immediate widget timeline reload via `WidgetCenter.shared.reloadAllTimelines()`
+- Activity filtering happens client-side after fetching from the Strava API
+
+<Info>
+Activity type settings are stored locally on your device and sync automatically between the main app and all widgets.
+</Info>

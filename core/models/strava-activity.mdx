@@ -1,0 +1,209 @@
+---
+title: StravaActivity
+description: Model representing a single Strava activity
+---
+
+## StravaActivity
+
+Represents a single activity from the Strava API, containing core metrics and metadata.
+
+<ResponseField name="id" type="Int" required>
+  Unique Strava activity identifier
+</ResponseField>
+
+<ResponseField name="name" type="String" required>
+  User-provided name of the activity
+</ResponseField>
+
+<ResponseField name="distance" type="Double" required>
+  Distance covered in meters
+</ResponseField>
+
+<ResponseField name="movingTime" type="Int" required>
+  Time spent moving in seconds (excludes pauses)
+  
+  API key: `moving_time`
+</ResponseField>
+
+<ResponseField name="elapsedTime" type="Int" required>
+  Total elapsed time in seconds (includes pauses)
+  
+  API key: `elapsed_time`
+</ResponseField>
+
+<ResponseField name="type" type="String" required>
+  Activity type identifier (e.g., "Run", "Ride")
+</ResponseField>
+
+<ResponseField name="sportType" type="String" required>
+  More specific sport type (e.g., "Trail_Run", "Mountain_Bike_Ride")
+  
+  API key: `sport_type`
+</ResponseField>
+
+<ResponseField name="startDate" type="Date" required>
+  Activity start time in UTC
+  
+  API key: `start_date`
+</ResponseField>
+
+<ResponseField name="startDateLocal" type="Date" required>
+  Activity start time in local timezone
+  
+  API key: `start_date_local`
+</ResponseField>
+
+<ResponseField name="totalElevationGain" type="Double" required>
+  Total elevation gain in meters
+  
+  API key: `total_elevation_gain`
+</ResponseField>
+
+<ResponseField name="kudosCount" type="Int" required>
+  Number of kudos received
+  
+  API key: `kudos_count`
+</ResponseField>
+
+<ResponseField name="sufferScore" type="Int?" required>
+  Strava's relative effort score (optional, only for premium users)
+  
+  API key: `suffer_score`
+</ResponseField>
+
+## Example
+
+```swift
+let activity = StravaActivity(
+    id: 123456789,
+    name: "Morning Run",
+    distance: 10000.0,
+    movingTime: 3600,
+    elapsedTime: 3720,
+    type: "Run",
+    sportType: "Trail_Run",
+    startDate: Date(),
+    startDateLocal: Date(),
+    totalElevationGain: 150.0,
+    kudosCount: 12,
+    sufferScore: 85
+)
+```
+
+## Decoding from API
+
+The model uses custom `CodingKeys` to map snake_case API fields to camelCase properties:
+
+```swift
+let jsonData = """
+{
+    "id": 123456789,
+    "name": "Afternoon Ride",
+    "distance": 32000.0,
+    "moving_time": 5400,
+    "elapsed_time": 5520,
+    "type": "Ride",
+    "sport_type": "Gravel_Ride",
+    "start_date": "2024-01-15T14:30:00Z",
+    "start_date_local": "2024-01-15T09:30:00-05:00",
+    "total_elevation_gain": 450.0,
+    "kudos_count": 24,
+    "suffer_score": 142
+}
+""".data(using: .utf8)!
+
+let decoder = JSONDecoder()
+decoder.dateDecodingStrategy = .iso8601
+
+let activity = try decoder.decode(StravaActivity.self, from: jsonData)
+print(activity.name) // "Afternoon Ride"
+print(activity.movingTime) // 5400
+```
+
+## Common Calculations
+
+```swift
+extension StravaActivity {
+    /// Distance in miles
+    var miles: Double {
+        distance / 1609.34
+    }
+    
+    /// Distance in kilometers
+    var kilometers: Double {
+        distance / 1000.0
+    }
+    
+    /// Average pace in seconds per mile
+    var paceSecondsPerMile: Double? {
+        guard miles > 0 else { return nil }
+        return Double(movingTime) / miles
+    }
+    
+    /// Average speed in miles per hour
+    var speedMph: Double? {
+        guard movingTime > 0 else { return nil }
+        return miles / (Double(movingTime) / 3600.0)
+    }
+    
+    /// Moving time formatted as "HH:MM:SS"
+    var movingTimeFormatted: String {
+        let hours = movingTime / 3600
+        let minutes = (movingTime % 3600) / 60
+        let seconds = movingTime % 60
+        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+    }
+    
+    /// Elevation gain in feet
+    var elevationGainFeet: Double {
+        totalElevationGain * 3.28084
+    }
+    
+    /// Pause time (elapsed - moving)
+    var pauseTime: Int {
+        elapsedTime - movingTime
+    }
+    
+    /// Match against ActivityType enum
+    func matchesActivityType(_ activityType: ActivityType) -> Bool {
+        activityType.matches(type: type, sportType: sportType)
+    }
+}
+
+// Usage
+let activity = StravaActivity(/* ... */)
+print("Distance: \(String(format: "%.2f", activity.miles)) mi")
+print("Pace: \(formatPace(activity.paceSecondsPerMile))")
+print("Moving: \(activity.movingTimeFormatted)")
+print("Elevation: \(Int(activity.elevationGainFeet)) ft")
+```
+
+## Filtering Activities
+
+```swift
+let activities: [StravaActivity] = loadActivities()
+
+// Filter by activity type
+let runs = activities.filter { activity in
+    ActivityType.run.matches(type: activity.type, sportType: activity.sportType)
+}
+
+// Filter by date range
+let calendar = Calendar.current
+let startOfYear = calendar.date(from: DateComponents(year: 2024, month: 1, day: 1))!
+let thisYear = activities.filter { $0.startDateLocal >= startOfYear }
+
+// Filter by distance
+let longRuns = activities.filter { $0.distance >= 16093.4 } // 10+ miles
+
+// Calculate totals
+let totalMiles = activities.reduce(0.0) { $0 + ($1.distance / 1609.34) }
+let totalKudos = activities.reduce(0) { $0 + $1.kudosCount }
+let totalElevation = activities.reduce(0.0) { $0 + $1.totalElevationGain }
+```
+
+## Conformances
+
+- `Codable` - Can be encoded/decoded to JSON
+- `Identifiable` - Has an `id` property for SwiftUI lists
+- `Sendable` - Safe to share across concurrency domains

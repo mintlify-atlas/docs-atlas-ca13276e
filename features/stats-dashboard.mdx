@@ -1,0 +1,140 @@
+---
+title: 'Stats Dashboard'
+description: 'Comprehensive training analytics and insights from your past 365 days'
+icon: 'chart-line'
+---
+
+The Stats Dashboard provides a complete overview of your training data from the past year, combining multiple visualizations and metrics to help you understand your performance, patterns, and progress.
+
+## Accessing Your Stats
+
+The Stats tab displays data for your selected activity types over the past 365 days. The dashboard shows a navigation title "Stats" with the subtitle "Past 365 days".
+
+<Steps>
+  <Step title="Navigate to Stats">
+    Tap the Stats tab to view your dashboard.
+  </Step>
+  
+  <Step title="Refresh your data">
+    Tap the refresh button (rotating arrow icon) in the top-right corner to fetch the latest data from Strava.
+  </Step>
+  
+  <Step title="Pull to refresh">
+    Pull down on the dashboard to trigger a manual refresh at any time.
+  </Step>
+</Steps>
+
+## Dashboard Components
+
+The Stats Dashboard displays several key sections that provide different insights into your training:
+
+### Summary Card
+
+The Summary section displays your most important training metrics at a glance:
+
+**Key Performance Indicators**:
+- **Peak Time**: Your most common training time window (e.g., "6-9 AM")
+- **Peak Day**: The day of the week you train most frequently
+- **Activities**: Total number of completed activities
+- **Distance**: Total miles covered
+
+**Additional Metrics**:
+- Moving time in hours
+- Total elevation gain in feet
+- Kudos received from the Strava community
+
+**Activity Breakdown**: When multiple activity types are selected, the summary shows the percentage distribution of your top 3 activity types (e.g., "Run 65%", "Ride 30%", "Swim 5%").
+
+<Info>
+  Peak Time and Peak Day are calculated from your training rhythm data and show time windows (3-hour buckets) and days with the most activities.
+</Info>
+
+### Visualizations
+
+The dashboard includes multiple charts and heatmaps:
+
+1. **Activity Heatmap**: GitHub-style calendar showing daily mileage
+2. **Training Rhythm**: Day/hour heatmap showing when you train
+3. **Weekly Miles Chart**: Bar chart of weekly distance totals
+4. **Pace Trend Chart**: Line chart showing pace over time
+5. **Effort Timeline Chart**: Timeline of training effort distribution
+6. **Top Activities Card**: Highlights of your best performances
+
+Each visualization is contained in a rounded card with consistent styling and spacing.
+
+## Refresh States
+
+The dashboard displays different states during data refresh:
+
+### Loading State
+When initially loading data, you'll see:
+- Progress indicator
+- "Loading your stats…" message
+
+### Updating State
+When refreshing data in the background:
+- Small progress indicator appears at the top
+- "Updating" label shows refresh is in progress
+- You can continue viewing your existing data
+
+### Offline State
+When data is cached and no network connection is available:
+- Cloud with slash icon appears
+- "Cached" label indicates you're viewing stored data
+
+<Tip>
+  The dashboard uses cached data when offline, so you can always review your stats even without an internet connection.
+</Tip>
+
+## Empty and Error States
+
+### No Activities
+If you have no activities in the last 12 months:
+- Calendar icon with exclamation mark appears
+- "No activities in last 12 months" message
+- Suggestion to complete a Strava activity and refresh
+
+### Failed to Load
+If stats cannot be loaded:
+- Warning triangle icon appears
+- "Stats unavailable" message
+- Specific error message explaining the issue
+
+## Partial Data View
+
+When full activity stats are still refreshing in the background, you may see a limited view:
+
+<Info>
+  A notice appears stating "Limited view from cached daily data while full activity stats refresh." This ensures you always have access to some data while the complete refresh happens in the background.
+</Info>
+
+## Data Timeframe
+
+All statistics and visualizations are based on activities from the past 365 days. This rolling window ensures:
+- Recent activity data is always included
+- Year-over-year comparisons are meaningful
+- The dashboard reflects your current training phase
+
+A footnote at the bottom confirms: "Stats based on your activities from past 365 days."
+
+## Refresh Behavior
+
+**Manual Refresh**: Tap the refresh button in the toolbar to force an immediate data refresh from Strava.
+
+**Pull-to-Refresh**: Pull down on any part of the scrollable dashboard to trigger a refresh.
+
+**Automatic Refresh**: The dashboard automatically reloads when you change your selected activity types.
+
+<Tip>
+  The refresh button displays a rotating animation while data is loading, and is disabled during the refresh to prevent multiple simultaneous requests.
+</Tip>
+
+## Tips for Analysis
+
+- Review the Summary card first to understand your overall training profile
+- Compare Peak Time and Peak Day to your training schedule goals
+- Use the activity type breakdown to ensure training balance
+- Check the refresh indicator to know if you're viewing live or cached data
+- Scroll through all visualizations for a complete picture of your training
+
+The Stats Dashboard brings together all your training data in one place, making it easy to track progress, identify patterns, and gain insights into your athletic journey.

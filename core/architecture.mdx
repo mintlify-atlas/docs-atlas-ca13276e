@@ -1,0 +1,265 @@
+---
+title: Architecture
+description: StratilesCore module organization and data flow
+---
+
+StratilesCore is organized into five core modules that work together to provide complete Strava integration and activity analytics functionality.
+
+## Module Overview
+
+```
+StratilesCore/
+├── API/              # Strava API client and OAuth
+├── Models/           # Data structures and type definitions
+├── Heatmap/          # Heatmap view generation
+├── Stats/            # Activity insights and analytics
+└── Storage/          # Caching and persistence
+```
+
+### Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Your App                              │
+└───────────────────┬─────────────────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     StratilesCore                            │
+│                                                              │
+│  ┌──────────┐    ┌──────────┐    ┌──────────┐              │
+│  │   API    │───▶│  Models  │◀───│ Heatmap  │              │
+│  │          │    │          │    │ Builder  │              │
+│  │ • Client │    │ • Activity│   │          │              │
+│  │ • OAuth  │    │ • Token  │    │ • View   │              │
+│  │ • Retry  │    │ • Insights│   │ • Levels │              │
+│  └────┬─────┘    └─────┬────┘    └──────────┘              │
+│       │                │                                    │
+│       │                │         ┌──────────┐               │
+│       │                └────────▶│  Stats   │               │
+│       │                          │ Builder  │               │
+│       │                          │          │               │
+│       │                          │ • Streaks│               │
+│       │                          │ • Volumes│               │
+│       │                          │ • Rhythm │               │
+│       │                          └──────────┘               │
+│       │                                                     │
+│       ▼                                                     │
+│  ┌──────────┐                                               │
+│  │ Storage  │                                               │
+│  │          │                                               │
+│  │ • Token  │  (Keychain)                                   │
+│  │ • Cache  │  (App Group)                                  │
+│  └──────────┘                                               │
+└─────────────────────────────────────────────────────────────┘
+                    │
+                    ▼
+           ┌────────────────┐
+           │  Strava API    │
+           └────────────────┘
+```
+
+## Modules
+
+### API Module
+
+The API module handles all communication with the Strava API.
+
+**Key Components:**
+
+- `StravaAPIClient` (API/StravaAPIClient.swift:3): Actor-based API client for thread-safe requests
+- `TokenManager` (API/): Manages OAuth token storage and retrieval
+- `StravaConfiguration`: Reads client credentials from Info.plist
+
+**Responsibilities:**
+
+- OAuth 2.0 authorization code exchange
+- Automatic token refresh with race condition prevention
+- Paginated activity fetching with type filtering
+- Exponential backoff retry logic for failed requests
+- Rate limit and error handling
+
+**Example Flow:**
+
+```swift
+let client = StravaAPIClient.shared
+let token = try await client.exchangeAuthorizationCode(code)
+let activities = try await client.fetchActivities(
+    selectedTypes: [.run, .ride],
+    maxPages: 8,
+    perPage: 100,
+    after: Date().addingTimeInterval(-365 * 24 * 60 * 60)
+)
+```
+
+### Models Module
+
+The Models module defines all data structures used throughout the library.
+
+**Core Models:**
+
+- `StravaActivity` (Models/StravaActivity.swift:3): Represents a single Strava activity with distance, time, elevation, and metadata
+- `StravaToken` (Models/): OAuth token with expiration tracking
+- `HeatmapDay` (Models/HeatmapDay.swift:3): Aggregated activity data for a single day
+- `HeatmapViewModel` (Models/): Complete heatmap data with weeks, cells, and totals
+- `ActivityInsights` (Models/): Comprehensive statistics and insights
+- `ActivityType` (Models/): Enumeration of supported activity types (Run, Ride, Swim, etc.)
+
+**Design Principles:**
+
+- All models are `Codable` for JSON serialization
+- All models are `Sendable` for safe concurrency
+- Models use snake_case to camelCase mapping for Strava API compatibility
+
+### Heatmap Module
+
+The Heatmap module transforms activity data into GitHub-style contribution heatmaps.
+
+**Key Components:**
+
+- `HeatmapBuilder` (Heatmap/HeatmapBuilder.swift:3): Static methods for generating heatmap views
+- `HeatmapColors` (Heatmap/): Color scheme definitions for intensity levels
+- `MonthLabelBuilder` (Heatmap/): Generates month labels for heatmap headers
+
+**Capabilities:**
+
+- Builds heatmap grids aligned to week boundaries (Heatmap/HeatmapBuilder.swift:34)
+- Calculates intensity levels (0-4) based on maximum daily mileage (Heatmap/HeatmapBuilder.swift:28)
+- Computes total mileage across the heatmap period
+- Generates day-of-week labels
+
+**Data Flow:**
+
+```
+[HeatmapDay] → HeatmapBuilder.buildHeatmapView() → HeatmapViewModel
+   (raw data)                                         (UI-ready)
+```
+
+### Stats Module
+
+The Stats module computes comprehensive training insights from raw activity data.
+
+**Key Components:**
+
+- `ActivityInsightsBuilder` (Stats/ActivityInsightsBuilder.swift:3): Main builder for computing all statistics
+
+**Computed Insights:**
+
+- **Streaks**: Current streak and longest streak (Stats/ActivityInsightsBuilder.swift:293)
+- **Weekly Volumes**: Mileage and active days per week (Stats/ActivityInsightsBuilder.swift:174)
+- **Training Rhythm**: Activity count by day of week and hour of day (Stats/ActivityInsightsBuilder.swift:254)
+- **Activity Type Breakdown**: Distribution across Run, Ride, Swim, etc. (Stats/ActivityInsightsBuilder.swift:272)
+- **Peak Days**: Top days by mileage and activity count (Stats/ActivityInsightsBuilder.swift:198)
+- **Peak Activities**: Longest individual activities (Stats/ActivityInsightsBuilder.swift:223)
+- **Pace Trends**: Pace over time for activities > 500m (Stats/ActivityInsightsBuilder.swift:367)
+- **Effort Analysis**: Weekly suffer scores and trends (Stats/ActivityInsightsBuilder.swift:396)
+
+**Build Modes:**
+
+- `build()`: Full insights with all raw activity data (Stats/ActivityInsightsBuilder.swift:7)
+- `buildPartial()`: Limited insights from cached heatmap data only (Stats/ActivityInsightsBuilder.swift:100)
+
+### Storage Module
+
+The Storage module handles persistence and caching.
+
+**Key Components:**
+
+- `ActivityCache` (Storage/ActivityCache.swift:3): Actor-based cache for activity data
+- `TokenManager`: Keychain-based token storage
+
+**Features:**
+
+- Stores activity data in App Group shared container for widget access
+- Supports multiple cache buckets keyed by activity type selection
+- Automatic freshness checking based on fetch timestamp (Storage/ActivityCache.swift:17)
+- Atomic writes to prevent corruption
+- Thread-safe access via Swift actors
+
+**Cache Structure:**
+
+```swift
+struct CachedPayload {
+    let fetchedAt: Date
+    let heatmapDays: [HeatmapDay]
+    let activities: [StravaActivity]?
+}
+```
+
+## Data Flow
+
+### 1. Authentication Flow
+
+```
+App → StravaAPIClient.exchangeAuthorizationCode()
+        ↓
+      Strava OAuth API
+        ↓
+      StravaToken
+        ↓
+      TokenManager.saveToken() → Keychain
+```
+
+### 2. Activity Fetch and Cache Flow
+
+```
+App → StravaAPIClient.fetchRawActivities()
+        ↓
+      [Auto token refresh if needed]
+        ↓
+      Strava Activities API (paginated)
+        ↓
+      [StravaActivity]
+        ↓
+      ActivityCache.write() → App Group Container
+```
+
+### 3. Heatmap Generation Flow
+
+```
+[StravaActivity] → StravaAPIClient.aggregateByDay()
+                     ↓
+                 [HeatmapDay]
+                     ↓
+               HeatmapBuilder.buildHeatmapView()
+                     ↓
+               HeatmapViewModel → UI
+```
+
+### 4. Insights Computation Flow
+
+```
+[StravaActivity] → ActivityInsightsBuilder.build()
+                     ↓
+                 [Aggregate by day/week/type]
+                     ↓
+                 [Compute streaks, peaks, rhythm]
+                     ↓
+                 ActivityInsights → UI
+```
+
+## Concurrency Model
+
+StratilesCore leverages Swift's structured concurrency:
+
+- **Actors**: `StravaAPIClient`, `TokenManager`, and `ActivityCache` are actors, ensuring thread-safe access to shared state
+- **Async/Await**: All API calls and I/O operations use async/await for clean error handling
+- **Task Deduplication**: Token refresh uses a shared task to prevent multiple simultaneous refresh requests (API/StravaAPIClient.swift:48)
+- **Sendable Types**: All data models conform to `Sendable` for safe transfer across concurrency boundaries
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="API Module" icon="plug" href="/core/api/strava-api-client">
+    Explore the Strava API client
+  </Card>
+  <Card title="Models" icon="database" href="/core/models/activity-insights">
+    View data structure definitions
+  </Card>
+  <Card title="Heatmap" icon="chart-simple" href="/core/heatmap/heatmap-builder">
+    Learn about heatmap generation
+  </Card>
+  <Card title="Stats" icon="chart-line" href="/core/stats/activity-insights-builder">
+    Understand activity insights
+  </Card>
+</CardGroup>

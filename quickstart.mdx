@@ -1,80 +1,207 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get started with Stratiles in minutes—connect your Strava account and view your first activity heatmap.
 ---
 
-## Get started in three steps
+This guide will walk you through the initial setup process and help you view your first GitHub-style activity heatmap.
 
-Get your documentation site running locally and make your first customization.
+## Connect your Strava account
 
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+<Steps>
+  <Step title="Launch Stratiles">
+    Open the Stratiles app on your iOS device. You'll see a welcome screen with:
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+    - A preview heatmap animation
+    - The Stratiles logo and name
+    - A tagline: "Your Strava activity heatmap, right on your Home Screen."
+    - A "Connect with Strava" button
+  </Step>
+  
+  <Step title="Tap 'Connect with Strava'">
+    Tap the orange "Connect with Strava" button. This will open an authentication session in a secure web view.
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+    <Info>
+    Stratiles uses OAuth for secure authentication. You're redirected to Strava's official login page—Stratiles never sees your Strava password.
+    </Info>
+  </Step>
+  
+  <Step title="Authorize Stratiles">
+    On the Strava authorization page:
     
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    1. Log in to your Strava account if you're not already signed in
+    2. Review the permissions requested by Stratiles
+    3. Tap "Authorize" to grant access
+    
+    **Permission requested**: `activity:read_all`
+    
+    This read-only permission allows Stratiles to fetch your activity data without the ability to modify or delete anything.
+  </Step>
+  
+  <Step title="Return to Stratiles">
+    After authorizing, you'll be automatically redirected back to Stratiles. The app will:
+    
+    1. Exchange the authorization code for an access token
+    2. Securely store the token in your device's keychain
+    3. Navigate to the main stats view
+  </Step>
+</Steps>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+<Note>
+If you see an error message about `STRAVA_CLIENT_ID` or `STRAVA_CLIENT_SECRET`, this indicates a configuration issue on the developer side. This should not occur in production builds.
+</Note>
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+## View your activity heatmap
 
-### Step 3: Go live
+Once authenticated, Stratiles automatically loads your activity data from the past 365 days.
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+### Stats tab
+
+The main Stats screen displays:
+
+**KPI header**
+- Total activities
+- Total miles covered
+- Total moving hours
+- Total elevation gain
+- Current activity streak
+- Longest activity streak
+- Total kudos received
+
+**Calendar heatmap**
+- A GitHub-style grid showing up to 52 weeks of activity
+- Each cell represents one day
+- Color intensity reflects distance covered that day
+- Darker colors = more miles
+
+**Training rhythm heatmap**
+- A 24-hour by 7-day grid
+- Shows when you typically work out during the week
+- Helps identify your most active training times
+
+**Charts and insights**
+- Weekly mileage chart
+- Pace trend analysis
+- Effort timeline (based on Strava's suffer score)
+- Top activities by distance
+
+### Pull to refresh
+
+Swipe down on the Stats screen to fetch the latest activities from Strava. This is useful when you've completed a new workout and want to see it reflected in your heatmap.
+
+<Info>
+Stratiles caches your activity data locally for offline viewing. The app displays a "Cached" indicator when showing offline data.
+</Info>
+
+## Customize activity types
+
+<Steps>
+  <Step title="Open Settings">
+    Tap the "Settings" tab at the bottom of the screen (gear icon).
+  </Step>
+  
+  <Step title="Select activity types">
+    Scroll through the categorized list of activity types:
+    
+    - **Foot Sports**: Run, Trail Run, Walk, Hike, Wheelchair, Virtual Run
+    - **Cycling**: Ride, Mountain Bike Ride, Gravel Ride, E-Bike Ride, and more
+    - **Water Sports**: Swim, Rowing, Kayaking, Stand Up Paddling, and more
+    - **Winter Sports**: Alpine Ski, Nordic Ski, Snowboard, Ice Skate, and more
+    - **Other Sports**: Tennis, Basketball, Soccer, Golf, Dance, and more
+    
+    Toggle each activity type on or off based on what you want to include in your heatmap.
+  </Step>
+  
+  <Step title="View updated stats">
+    After changing your activity type selection:
+    
+    1. The app automatically saves your preferences
+    2. Your widget updates to reflect the new selection
+    3. The Stats tab refreshes with filtered data
+    
+    <Note>
+    By default, Stratiles includes: Run, Ride, Walk, Trail Run, Hike, and Wheelchair activities.
+    </Note>
+  </Step>
+</Steps>
+
+## Add a Home Screen widget
+
+One of Stratiles' most popular features is the ability to add your activity heatmap directly to your iPhone Home Screen.
+
+<Steps>
+  <Step title="Enter Home Screen edit mode">
+    Long-press on an empty area of your Home Screen until the app icons start jiggling.
+  </Step>
+  
+  <Step title="Add a widget">
+    Tap the "+" button in the top-left corner of the screen.
+  </Step>
+  
+  <Step title="Search for Stratiles">
+    Use the search bar to find "Stratiles" or scroll through the widget list.
+  </Step>
+  
+  <Step title="Choose a widget size">
+    Stratiles offers two widget sizes:
+    
+    - **Small**: Compact heatmap with minimal labels
+    - **Medium**: Larger heatmap with month labels for easier reading
+    
+    Select your preferred size and tap "Add Widget."
+  </Step>
+  
+  <Step title="Position the widget">
+    Drag the widget to your desired location on the Home Screen, then tap "Done" in the top-right corner.
+  </Step>
+</Steps>
+
+<Info>
+Widgets automatically update throughout the day to show your latest activities. The heatmap refreshes when you open Stratiles or when iOS updates widget timelines.
+</Info>
+
+## Understanding the heatmap colors
+
+Stratiles uses a color scale to represent activity intensity:
+
+- **Empty/gray cells**: No activity that day
+- **Light orange**: Low mileage day
+- **Medium orange**: Moderate mileage day
+- **Dark orange**: High mileage day
+
+The exact color thresholds are calculated based on your maximum daily mileage, creating a personalized scale that adapts to your training volume.
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
+Now that you've connected your Strava account and viewed your first heatmap, explore more features:
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Activity heatmap" icon="sparkles" href="/features/activity-heatmap">
+    Learn more about the GitHub-style activity heatmap
+  </Card>
+  
+  <Card title="Configuration" icon="gear" href="/configuration/activity-types">
+    Customize activity types and settings
+  </Card>
 </CardGroup>
 
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+## Common questions
+
+**How often does Stratiles sync with Strava?**
+
+Stratiles fetches your activities when you:
+- Open the app
+- Pull to refresh on the Stats screen
+- Change your activity type selection
+- iOS automatically refreshes widget timelines (typically a few times per day)
+
+**Why are some activities missing?**
+
+Ensure the activity type is enabled in Settings. Stratiles only displays activities that match your selected types.
+
+**Can I view activities older than 365 days?**
+
+Currently, Stratiles displays the past 365 days of activity data. This covers 52 weeks of history in the heatmap visualization.
+
+**What happens if I sign out?**
+
+Signing out removes your access token and clears all locally cached activity data. You'll need to reconnect your Strava account to use Stratiles again.

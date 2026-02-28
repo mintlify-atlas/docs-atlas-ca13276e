@@ -1,0 +1,116 @@
+---
+title: "Strava Authentication"
+description: "Connect your Strava account to Stratiles using OAuth 2.0"
+---
+
+## Overview
+
+Stratiles uses Strava's OAuth 2.0 authentication to securely access your activity data. The app requests read-only access to your activities and never modifies or deletes your Strava data.
+
+## Connecting Your Account
+
+<Steps>
+  <Step title="Open Stratiles">
+    Launch the Stratiles app on your iOS device. You'll be prompted to connect your Strava account.
+  </Step>
+  
+  <Step title="Authorize with Strava">
+    Tap "Connect with Strava" to open the Strava authorization page in your browser. You'll be asked to log in to Strava if you're not already signed in.
+  </Step>
+  
+  <Step title="Grant Permissions">
+    Review the permissions Stratiles is requesting:
+    - Read your activity data
+    - View your profile information
+    
+    Tap "Authorize" to grant access.
+  </Step>
+  
+  <Step title="Return to App">
+    You'll be automatically redirected back to Stratiles. The app will exchange the authorization code for access tokens and begin syncing your activities.
+  </Step>
+</Steps>
+
+## How Authentication Works
+
+Stratiles implements Strava's OAuth 2.0 flow with automatic token refresh:
+
+1. **Authorization**: When you connect, Stratiles redirects to `https://www.strava.com/oauth/authorize` with your authorization request
+2. **Token Exchange**: After authorization, Stratiles exchanges the authorization code for access and refresh tokens
+3. **Secure Storage**: Tokens are stored securely in the iOS Keychain using the TokenManager
+4. **Automatic Refresh**: Access tokens expire after 6 hours. Stratiles automatically refreshes them using your refresh token without requiring re-authentication
+
+<Info>
+Stratiles uses the custom URL scheme `stratiles://localhost/callback` to handle the OAuth redirect back to the app.
+</Info>
+
+## Disconnecting Your Account
+
+You can disconnect your Strava account at any time from the Settings screen.
+
+<Steps>
+  <Step title="Open Settings">
+    Tap the settings icon in the top right corner of the main screen.
+  </Step>
+  
+  <Step title="Sign Out">
+    Scroll to the bottom and tap "Sign Out". This will:
+    - Clear all stored authentication tokens
+    - Remove cached activity data
+    - Reload all widgets to clear their data
+  </Step>
+  
+  <Step title="Confirm">
+    You'll return to the welcome screen and can reconnect at any time.
+  </Step>
+</Steps>
+
+<Warning>
+Signing out clears all locally cached data. You'll need to re-sync your activities when you reconnect.
+</Warning>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Authorization fails or times out">
+    If the Strava authorization page doesn't load or times out:
+    - Check your internet connection
+    - Ensure you're using the latest version of Stratiles
+    - Try force-quitting the app and attempting authorization again
+    - The app uses exponential backoff with retries for network requests (up to 3 attempts with 8-second max delay)
+  </Accordion>
+  
+  <Accordion title="Can't return to app after authorizing">
+    If you're stuck on the Strava website after authorizing:
+    - Manually switch back to Stratiles using the app switcher
+    - If the app didn't receive the authorization, try disconnecting and reconnecting
+    - Verify that the custom URL scheme `stratiles://` is properly registered
+  </Accordion>
+  
+  <Accordion title="Token refresh errors">
+    If you see errors about expired or invalid tokens:
+    - The app automatically handles token refresh when access tokens expire
+    - If refresh fails repeatedly, try signing out and reconnecting
+    - Strava refresh tokens are long-lived and should not expire under normal use
+  </Accordion>
+  
+  <Accordion title="Activities not syncing">
+    If your activities aren't appearing after connecting:
+    - Wait a moment for the initial sync to complete
+    - Check that you've selected the correct activity types in Settings
+    - Verify your Strava account has activities in the selected types
+    - The app fetches up to 800 activities (8 pages × 100 per page) from the Strava API
+  </Accordion>
+</AccordionGroup>
+
+## Privacy & Security
+
+- Stratiles only requests read access to your activities
+- Authentication tokens are stored securely in the iOS Keychain
+- Your Strava credentials are never stored in the app
+- All API requests use HTTPS encryption
+- You can revoke Stratiles' access anytime from your [Strava settings](https://www.strava.com/settings/apps)
+
+<Tip>
+To completely revoke access, sign out in Stratiles and also remove the app from your authorized applications in Strava's settings.
+</Tip>
