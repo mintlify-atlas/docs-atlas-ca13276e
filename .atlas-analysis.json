@@ -1,0 +1,110 @@
+{
+  "projectType": "saas",
+  "projectName": "Stratiles",
+  "projectDescription": "iOS app that visualizes Strava activities with GitHub-style heatmaps and comprehensive training insights.",
+  "theme": "aspen",
+  "primaryColor": "#FC5200",
+  "lightColor": "#FF6B1A",
+  "darkColor": "#E04800",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction", "installation", "quickstart"]
+          },
+          {
+            "group": "Features",
+            "pages": [
+              "features/activity-heatmap",
+              "features/stats-dashboard",
+              "features/training-rhythm",
+              "features/ios-widget"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/strava-auth",
+              "configuration/activity-types",
+              "configuration/widget-setup"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Core Library",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": ["core/introduction", "core/architecture"]
+          },
+          {
+            "group": "API Reference",
+            "pages": [
+              "core/api/strava-api-client",
+              "core/api/token-manager",
+              "core/api/activity-cache"
+            ]
+          },
+          {
+            "group": "Models",
+            "pages": [
+              "core/models/activity-insights",
+              "core/models/activity-type",
+              "core/models/heatmap-day",
+              "core/models/strava-activity"
+            ]
+          },
+          {
+            "group": "Heatmap",
+            "pages": [
+              "core/heatmap/heatmap-builder",
+              "core/heatmap/heatmap-colors",
+              "core/heatmap/month-label-builder"
+            ]
+          },
+          {
+            "group": "Stats",
+            "pages": [
+              "core/stats/activity-insights-builder"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "GitHub-style activity heatmap visualization",
+    "Comprehensive training statistics and insights",
+    "Training rhythm analysis by day and hour",
+    "Weekly volume and pace trend charts",
+    "Peak day and activity tracking",
+    "iOS home screen widgets",
+    "Support for 50+ Strava activity types",
+    "Offline caching and data persistence",
+    "OAuth 2.0 authentication with Strava"
+  ],
+  "publicApiSurface": [
+    "StravaAPIClient.shared",
+    "StravaAPIClient.exchangeAuthorizationCode(_:)",
+    "StravaAPIClient.getAccessToken(forceRefresh:)",
+    "StravaAPIClient.fetchActivities(selectedTypes:maxPages:perPage:after:)",
+    "StravaAPIClient.fetchRawActivities(selectedTypes:maxPages:perPage:after:)",
+    "TokenManager.shared",
+    "TokenManager.saveToken(_:)",
+    "TokenManager.loadToken()",
+    "TokenManager.clearToken()",
+    "ActivityCache.shared",
+    "HeatmapBuilder.buildHeatmapView(heatmap:weeksToShow:)",
+    "HeatmapBuilder.getLevel(miles:maxMiles:)",
+    "ActivityInsightsBuilder.build(from:windowStart:windowEnd:isPartial:)",
+    "ActivityType (enum with 50+ sport types)",
+    "ActivityInsights (stats model)",
+    "HeatmapDay (daily activity model)",
+    "StravaActivity (activity model)",
+    "HeatmapViewModel (heatmap view data)"
+  ]
+}
